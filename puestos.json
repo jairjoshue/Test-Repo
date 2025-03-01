@@ -1,30 +1,49 @@
-"A1": {
+{
+    "A1": {
         "nombre": "Analista de Datos",
         "empresa": "Minera CHINALCO",
         "descripcion": "Analizar datos de producción minera, desarrollar reportes en Power BI y optimizar procesos con Machine Learning.",
         "preguntas": {
-            "Explique cómo usaría Power BI para mejorar el análisis de producción minera.": "Power BI permite visualizar datos en tiempo real, facilitando la toma de decisiones y el monitoreo de KPIs en la minería.",
-            "¿Cómo manejaría un gran volumen de datos de sensores en la mina?": "Utilizaría técnicas de Big Data y almacenamiento en la nube para gestionar y analizar grandes volúmenes de datos.",
-            "Describa un caso de uso en minería donde el Machine Learning pueda optimizar procesos.": "El Machine Learning puede predecir fallos en maquinarias mineras y optimizar la planificación de mantenimiento preventivo."
+            "Explique cómo usaría Power BI para mejorar el análisis de producción minera.": 
+                "Power BI permite visualizar datos en tiempo real, facilitando la toma de decisiones y el monitoreo de KPIs en la minería.",
+            
+            "¿Cómo manejaría un gran volumen de datos de sensores en la mina?": 
+                "Utilizaría técnicas de Big Data y almacenamiento en la nube para gestionar y analizar grandes volúmenes de datos.",
+            
+            "Describa un caso de uso en minería donde el Machine Learning pueda optimizar procesos.": 
+                "El Machine Learning puede predecir fallos en maquinarias mineras y optimizar la planificación de mantenimiento preventivo."
         }
     },
+    
     "B2": {
         "nombre": "Analista Senior de People Analytics",
         "empresa": "Minera CHINALCO",
         "descripcion": "Análisis de datos de RRHH para optimización de desempeño laboral y productividad minera.",
         "preguntas": {
-            "Explique cómo mejoraría la gestión del talento humano con People Analytics.": "People Analytics permite identificar patrones en el desempeño de los empleados y mejorar la toma de decisiones en RRHH.",
-            "¿Cómo evaluaría el impacto de la rotación laboral en la eficiencia minera?": "Analizaría métricas de productividad y correlacionaría la rotación con el desempeño de las operaciones.",
-            "Describa cómo diseñaría un modelo predictivo para detectar empleados en riesgo de renuncia.": "Usaría modelos de Machine Learning para analizar indicadores de compromiso y desempeño."
+            "Explique cómo mejoraría la gestión del talento humano con People Analytics.": 
+                "People Analytics permite identificar patrones en el desempeño de los empleados y mejorar la toma de decisiones en RRHH.",
+            
+            "¿Cómo evaluaría el impacto de la rotación laboral en la eficiencia minera?": 
+                "Analizaría métricas de productividad y correlacionaría la rotación con el desempeño de las operaciones.",
+            
+            "Describa cómo diseñaría un modelo predictivo para detectar empleados en riesgo de renuncia.": 
+                "Usaría modelos de Machine Learning para analizar indicadores de compromiso y desempeño."
         }
     },
+
     "C4": {
         "nombre": "Ingeniero de Seguridad",
         "empresa": "Minera CHINALCO",
         "descripcion": "Supervisión y gestión de seguridad minera para garantizar cumplimiento de normativas SSOMA.",
         "preguntas": {
-            "Explique cómo diseñaría un plan de seguridad para una mina a tajo abierto.": "Un plan debe incluir protocolos de seguridad, capacitación y monitoreo de riesgos.",
-            "¿Qué estrategias implementaría para reducir accidentes en operaciones mineras?": "Capacitación constante, supervisión estricta y uso de tecnología de monitoreo.",
-            "Describa cómo garantizaría el cumplimiento de normativas SSOMA en un proyecto minero.": "Implementando auditorías de seguridad, protocolos de emergencia y cultura preventiva."
+            "Explique cómo diseñaría un plan de seguridad para una mina a tajo abierto.": 
+                "Un plan debe incluir protocolos de seguridad, capacitación y monitoreo de riesgos.",
+            
+            "¿Qué estrategias implementaría para reducir accidentes en operaciones mineras?": 
+                "Capacitación constante, supervisión estricta y uso de tecnología de monitoreo.",
+            
+            "Describa cómo garantizaría el cumplimiento de normativas SSOMA en un proyecto minero.": 
+                "Implementando auditorías de seguridad, protocolos de emergencia y cultura preventiva."
         }
     }
+}

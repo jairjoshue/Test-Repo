@@ -1,6 +1,9 @@
 import streamlit as st
 import google.generativeai as genai
+import json
 import time
+import random
+from datetime import datetime
 
 # Cargar CSS personalizado
 def load_css():
@@ -14,46 +17,24 @@ load_css()
 API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
 genai.configure(api_key=API_KEY)
 
-# Definir el modelo a utilizar
-#model = genai.GenerativeModel(model_name="gemini-1.5-pro")  # Última versión de Gemini
+# Usar un modelo ligero para evitar bloqueos
 model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
-# Datos simulados de postulantes y preguntas
-postulantes = [
-    {"nombre": "Jairsinho Patiño", "documento": "10010010", "codigo_puesto": "A1"},
-    {"nombre": "Juan Perez", "documento": "20020020", "codigo_puesto": "A1"},
-    {"nombre": "Pepe Guzman", "documento": "30030030", "codigo_puesto": "B2"},
-    {"nombre": "Manuel Burga", "documento": "40040040", "codigo_puesto": "B2"},
-    {"nombre": "Maria Cuadro", "documento": "50050050", "codigo_puesto": "C4"},
-    {"nombre": "Jose Machicao", "documento": "60060060", "codigo_puesto": "C4"}
-]
+# Función para cargar archivos JSON
+def cargar_json(filepath):
+    with open(filepath, "r", encoding="utf-8") as file:
+        return json.load(file)
 
-# Preguntas generales sobre la empresa
-preguntas_generales_empresa = {
-    "¿Qué conoce sobre Minera CHINALCO y su impacto en la minería peruana?": "Minera CHINALCO opera la mina Toromocho, destacándose por la innovación tecnológica y su enfoque en sostenibilidad.",
-    "¿Cuáles considera que son los desafíos más importantes en la industria minera actualmente?": "Optimización de procesos, reducción del impacto ambiental y uso de tecnología avanzada."
-}
+# Cargar datos desde archivos JSON
+postulantes = cargar_json("data/postulantes.json")
+preguntas_generales = cargar_json("data/preguntas_generales.json")
+puestos = cargar_json("data/puestos.json")
 
-# Definir los puestos y preguntas técnicas
-puestos = {
-    "A1": {
-        "nombre": "Analista de Datos",
-        "descripcion": "Analizar datos de producción minera y desarrollar reportes en Power BI.",
-        "preguntas": {
-            "Explique cómo usaría Power BI para mejorar el análisis de producción minera.": "Power BI permite visualizar datos en tiempo real para una mejor toma de decisiones.",
-            "¿Cómo manejaría un gran volumen de datos de sensores en la mina?": "Utilizaría Big Data y almacenamiento en la nube.",
-            "Describa un caso de uso en minería donde el Machine Learning pueda optimizar procesos.": "Predicción de fallos en maquinaria para mantenimiento preventivo."
-        }
-    }
-}
-
-# Estado de la aplicación
+# Inicializar sesión de usuario
 if "entrevista_iniciada" not in st.session_state:
     st.session_state["entrevista_iniciada"] = False
-
 if "respuestas_usuario" not in st.session_state:
     st.session_state["respuestas_usuario"] = {}
-
 if "entrevista_completada" not in st.session_state:
     st.session_state["entrevista_completada"] = False
 
@@ -64,8 +45,8 @@ def validar_postulante(nombre, documento):
             return puestos.get(postulante["codigo_puesto"]), postulante["codigo_puesto"]
     return None, None
 
-# Evaluación con Gemini
-def evaluar_respuestas_todas(respuestas_usuario):
+# Función para evaluar respuestas con IA
+def evaluar_respuestas(respuestas_usuario):
     feedback_total = {}
     puntaje_total = 0
     total_preguntas = len(respuestas_usuario)
@@ -74,8 +55,10 @@ def evaluar_respuestas_todas(respuestas_usuario):
         respuesta = datos["respuesta"]
         respuesta_esperada = datos["esperada"]
         prompt = f"""
-        Evalúa la respuesta del candidato en comparación con la respuesta esperada.
+        Evalúa la respuesta del candidato comparándola con la respuesta esperada.
         Devuelve una puntuación (1: Correcto, 0.5: Parcialmente Correcto, 0: Incorrecto) y una breve justificación.
+        Además, analiza la confianza y coherencia del candidato.
+        
         Pregunta: {pregunta}
         Respuesta del candidato: {respuesta}
         Respuesta esperada: {respuesta_esperada}
@@ -101,17 +84,25 @@ def evaluar_respuestas_todas(respuestas_usuario):
     porcentaje_aciertos = (puntaje_total / total_preguntas) * 100
     return feedback_total, porcentaje_aciertos
 
-# UI Mejorada
-# UI Mejorada con el nuevo logo
-# UI Mejorada con el nuevo logo centrado
-# st.markdown('<div class="logo-container"><img src="logo-mina.png" alt="Logo Chinalco"></div>', unsafe_allow_html=True)
-# Centrar el logo correctamente con `st.image()`
-st.markdown('<div style="display: flex; justify-content: center;">', unsafe_allow_html=True)
-st.image("logo-mina.png", width=200)  # Asegúrate de que la imagen está en la misma carpeta
-st.markdown('</div>', unsafe_allow_html=True)
-st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
-st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
+# Guardar respuestas y feedback en JSON
+def guardar_datos(nombre, documento, feedback_total, puntaje_final):
+    respuesta_json = {
+        "nombre": nombre,
+        "documento": documento,
+        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "puntaje_final": puntaje_final,
+        "feedback": feedback_total
+    }
 
+    with open("data/feedback.json", "r+", encoding="utf-8") as file:
+        datos = json.load(file)
+        datos.append(respuesta_json)
+        file.seek(0)
+        json.dump(datos, file, indent=4, ensure_ascii=False)
+
+# Interfaz Web Mejorada
+st.image("logo-mina.png", width=200)
+st.markdown("<h1 style='text-align: center;'>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
 
 # Validación del postulante
 st.markdown("<h2>🔍 Validación de Identidad</h2>", unsafe_allow_html=True)
@@ -131,34 +122,35 @@ if st.button("🔎 Validar Postulante"):
 
 # Iniciar la entrevista
 if st.session_state["entrevista_iniciada"]:
-    iniciar = st.checkbox("Acepto las reglas de la entrevista.")
-    
-    if iniciar:
+    if st.checkbox("✅ Acepto las reglas de la entrevista"):
         puesto = st.session_state["puesto"]
         st.markdown("<h2>📝 Preguntas Generales</h2>", unsafe_allow_html=True)
         
-        for pregunta in preguntas_generales_empresa.keys():
-            st.markdown(f"<div class='question-box'><h3>{pregunta}</h3></div>", unsafe_allow_html=True)
+        for pregunta in preguntas_generales.keys():
+            st.markdown(f"<h3>{pregunta}</h3>", unsafe_allow_html=True)
             respuesta = st.text_area(f"Responda aquí:", key=pregunta)
-            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": preguntas_generales_empresa[pregunta]}
+            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": preguntas_generales[pregunta]}
 
         st.markdown("<h2>📊 Preguntas Técnicas</h2>", unsafe_allow_html=True)
 
-        for pregunta in puesto["preguntas"].keys():
-            st.markdown(f"<div class='question-box'><h3>{pregunta}</h3></div>", unsafe_allow_html=True)
+        preguntas_puesto = list(puesto["preguntas"].items())
+        random.shuffle(preguntas_puesto)  # Orden aleatorio
+
+        for pregunta, respuesta_esperada in preguntas_puesto:
+            st.markdown(f"<h3>{pregunta}</h3>", unsafe_allow_html=True)
             respuesta = st.text_area(f"Responda aquí:", key=pregunta)
-            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": puesto["preguntas"][pregunta]}
+            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": respuesta_esperada}
 
-        # Botón para enviar todas las respuestas
+        # Botón para enviar respuestas
         if st.button("📩 Enviar Entrevista y Obtener Feedback"):
-            feedback_total, porcentaje_aciertos = evaluar_respuestas_todas(st.session_state["respuestas_usuario"])
+            feedback_total, porcentaje_aciertos = evaluar_respuestas(st.session_state["respuestas_usuario"])
+            guardar_datos(nombre, documento, feedback_total, porcentaje_aciertos)
             st.success(f"🎯 Puntaje final: **{porcentaje_aciertos:.2f}%**")
-            st.write("📩 Sus respuestas serán enviadas a Recursos Humanos para su evaluación.")
+            st.write("📩 Sus respuestas serán enviadas a Recursos Humanos.")
 
-            # Mostrar feedback detallado
+            # Mostrar feedback
             for pregunta, datos in feedback_total.items():
-                st.markdown(f"<div class='feedback-box'><h3>{pregunta}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<h3>{pregunta}</h3>", unsafe_allow_html=True)
                 st.write(f"✅ Respuesta: {datos['respuesta_usuario']}")
                 st.write(f"📊 Evaluación: {datos['evaluacion']}")
                 st.write(f"🎯 Puntaje: {datos['puntaje']}/1")
-                st.markdown("</div>", unsafe_allow_html=True)

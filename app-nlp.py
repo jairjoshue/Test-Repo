@@ -15,6 +15,8 @@ st.markdown("""
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
             height: 500px;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Mensajes del bot */
@@ -89,14 +91,18 @@ st.markdown("""
 
 # Inicializar historial de chat en sesión si no existe
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [
+    st.session_state["chat_history"] = [
         {"role": "bot", "text": "Hola, bienvenido a la entrevista virtual de Minera CHINALCO."},
         {"role": "bot", "text": "Voy a realizarte algunas preguntas sobre tu experiencia y conocimientos."}
     ]
 
+# Inicializar el input en la sesión si no existe
+if "user_input" not in st.session_state:
+    st.session_state["user_input"] = ""
+
 # Función para agregar mensajes al historial
 def add_message(role, text):
-    st.session_state.chat_history.append({"role": role, "text": text})
+    st.session_state["chat_history"].append({"role": role, "text": text})
 
 # Título del Chatbot
 st.markdown("<h2>💬 Chat de Entrevista</h2>", unsafe_allow_html=True)
@@ -104,7 +110,7 @@ st.markdown("<h2>💬 Chat de Entrevista</h2>", unsafe_allow_html=True)
 # Mostrar el contenedor de chat
 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
-for msg in st.session_state.chat_history:
+for msg in st.session_state["chat_history"]:
     if msg["role"] == "bot":
         st.markdown(f'<div class="message-container bot-container"><span class="bot-message">🤖 {msg["text"]}</span></div>', unsafe_allow_html=True)
     else:
@@ -112,13 +118,12 @@ for msg in st.session_state.chat_history:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Input de usuario
-user_input = st.text_input("Escribe tu respuesta aquí:", key="user_input")
+# Input de usuario con detección de tecla "Enter"
+user_input = st.text_input("Escribe tu respuesta aquí:", key="user_input", on_change=lambda: st.session_state.update({"user_input": ""}))
 
-# Enviar mensaje con Enter
 if user_input:
     add_message("user", user_input)  # Agregar mensaje del usuario
     time.sleep(1)  # Simula una pausa antes de la respuesta del bot
     add_message("bot", "Gracias por tu respuesta. Ahora dime...")  # Respuesta simulada del bot
-    st.session_state.user_input = ""  # Limpiar input después de enviar
+    st.session_state["user_input"] = ""  # Limpiar input después de enviar
     st.rerun()  # Recargar la interfaz para mostrar los nuevos mensajes

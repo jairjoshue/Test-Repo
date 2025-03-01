@@ -18,7 +18,17 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    text-align: center;
+    width: 100%;
     margin-bottom: 20px;
+}
+
+/* Ajustar la imagen del logo */
+.logo-container img {
+    max-width: 200px; /* Controla el tamaño */
+    height: auto;
+    display: block;
+    margin: 0 auto; /* Centra la imagen */
 }
 
 /* Header */
@@ -29,6 +39,7 @@ h1 {
     font-weight: bold;
 }
 
+/* Sección de Validación */
 h2 {
     color: #004A99;
     font-size: 1.5em;
@@ -55,29 +66,4 @@ h2 {
     border: 1px solid #004A99;
     padding: 10px;
     font-size: 16px;
-}
-
-/* Tarjetas de Preguntas */
-.question-box {
-    background: #e6f2ff !important;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-/* Feedback */
-.feedback-box {
-    background: #dff0d8 !important;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 10px;
-    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-/* Títulos de Preguntas */
-.question-box h3, .feedback-box h3 {
-    color: #004A99 !important;
-    font-size: 18px;
-    font-weight: bold;
 }

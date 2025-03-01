@@ -1,0 +1,9 @@
+[
+    {
+        "nombre": "Juan Perez",
+        "documento": "20020020",
+        "fecha": "2024-03-01 15:00:00",
+        "puntaje_final": 85,
+        "comentarios": "El candidato mostró un buen manejo de Power BI, pero necesita mejorar su capacidad para explicar ejemplos específicos de Machine Learning en minería."
+    }
+]

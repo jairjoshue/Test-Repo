@@ -132,11 +132,11 @@ st.markdown("""
     Nombre: Juan Perez
     Documento: 20020020  <br>
     Nombre: Pepe Guzman
-    Documento: 30030030 || 
+    Documento: 30030030 <br> 
     Nombre: Manuel Burga
-    Documento: 40040040 || 
+    Documento: 40040040 <br>
     Nombre: Maria Cuadro
-    Documento: 50050050 || 
+    Documento: 50050050 <br>
     Nombre: Jose Machicao
     Documento: 60060060
     </p>

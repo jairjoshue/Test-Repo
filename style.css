@@ -13,6 +13,14 @@ body {
     box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Logo Centrado */
+.logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
 /* Header */
 h1 {
     color: #004A99;
@@ -72,12 +80,4 @@ h2 {
     color: #004A99 !important;
     font-size: 18px;
     font-weight: bold;
-}
-
-/* Logo */
-.logo-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
 }

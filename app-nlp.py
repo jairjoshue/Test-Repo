@@ -1,6 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
-
+import time
 # Configurar la API de Gemini
 API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
 genai.configure(api_key=API_KEY)
@@ -11,7 +11,7 @@ model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
 # Datos simulados de postulantes y preguntas
 postulantes = [
-    {"nombre": "Jairsinho Patiño Franco", "documento": "10010010", "codigo_puesto": "A1"},
+    {"nombre": "Jairsinho Patiño", "documento": "10010010", "codigo_puesto": "A1"},
     {"nombre": "Juan Perez", "documento": "20020020", "codigo_puesto": "A1"},
     {"nombre": "Pepe Guzman", "documento": "30030030", "codigo_puesto": "B2"},
     {"nombre": "Manuel Burga", "documento": "40040040", "codigo_puesto": "B2"},
@@ -37,12 +37,16 @@ puestos = {
         }
     }
 }
-# Inicializar estado de la aplicación
-if "solicitudes_gemini" not in st.session_state:
-    st.session_state["solicitudes_gemini"] = 0
 
+# Inicializar estado de la aplicación
 if "entrevista_iniciada" not in st.session_state:
     st.session_state["entrevista_iniciada"] = False
+
+if "respuestas_usuario" not in st.session_state:
+    st.session_state["respuestas_usuario"] = {}
+
+if "entrevista_completada" not in st.session_state:
+    st.session_state["entrevista_completada"] = False
 
 # Función para validar postulantes
 def validar_postulante(nombre, documento):
@@ -51,29 +55,42 @@ def validar_postulante(nombre, documento):
             return puestos.get(postulante["codigo_puesto"]), postulante["codigo_puesto"]
     return None, None
 
-# Evaluación con Gemini (Usa Cache para evitar llamadas repetitivas)
-@st.cache_data
-def evaluar_respuesta_gemini(pregunta, respuesta, respuesta_esperada):
-    if st.session_state["solicitudes_gemini"] >= 10:
-        return "⚠️ Has alcanzado el límite de evaluaciones por sesión. Intenta más tarde."
+# Evaluación con Gemini
+def evaluar_respuestas_todas(respuestas_usuario):
+    feedback_total = {}
+    puntaje_total = 0
+    total_preguntas = len(respuestas_usuario)
 
-    try:
+    for pregunta, datos in respuestas_usuario.items():
+        respuesta = datos["respuesta"]
+        respuesta_esperada = datos["esperada"]
         prompt = f"""
         Evalúa la respuesta del candidato en comparación con la respuesta esperada.
-        Devuelve una puntuación (1: Correcto, 0.5: Parcialmente Correcto, 0: Incorrecto) y una explicación.
+        Devuelve una puntuación (1: Correcto, 0.5: Parcialmente Correcto, 0: Incorrecto) y una breve justificación.
         Pregunta: {pregunta}
         Respuesta del candidato: {respuesta}
         Respuesta esperada: {respuesta_esperada}
         """
-        
         response = model.generate_content(prompt)
-        st.session_state["solicitudes_gemini"] += 1
-        time.sleep(2)  # Previene sobrecarga en la API
-        
-        return response.text.strip()
+        feedback = response.text.strip()
 
-    except google.api_core.exceptions.ResourceExhausted:
-        return "❌ Límite de la API alcanzado. Intenta más tarde."
+        # Extraer puntaje
+        if "1" in feedback:
+            puntaje = 1
+        elif "0.5" in feedback:
+            puntaje = 0.5
+        else:
+            puntaje = 0
+
+        feedback_total[pregunta] = {
+            "respuesta_usuario": respuesta,
+            "evaluacion": feedback,
+            "puntaje": puntaje
+        }
+        puntaje_total += puntaje
+
+    porcentaje_aciertos = (puntaje_total / total_preguntas) * 100
+    return feedback_total, porcentaje_aciertos
 
 # Interfaz en Streamlit
 st.title("🛠️ Chatbot de Entrevistas - Minera CHINALCO")
@@ -101,35 +118,29 @@ if st.session_state["entrevista_iniciada"]:
     if iniciar:
         puesto = st.session_state["puesto"]
         st.subheader("📋 Preguntas Generales sobre la Empresa")
-        puntaje_total = 0
-        total_preguntas = len(preguntas_generales_empresa) + len(puesto["preguntas"])
 
-        # Preguntas en orden con timer de 1 minuto entre cada una
-        for i, (pregunta, respuesta_esperada) in enumerate(preguntas_generales_empresa.items()):
-            st.write(f"📝 Pregunta {i + 1}: {pregunta}")
-            respuesta = st.text_area(f"Responda aquí:", key=f"gen_{pregunta}")
-            if st.button(f"Evaluar {pregunta[:20]}...", key=f"btn_{pregunta}"):
-                evaluacion = evaluar_respuesta_gemini(pregunta, respuesta, respuesta_esperada)
-                st.write(f"Evaluación: {evaluacion}")
-                if "Correcto" in evaluacion:
-                    puntaje_total += 1
-                elif "Parcialmente Correcto" in evaluacion:
-                    puntaje_total += 0.5
-                time.sleep(60)  # Pausa de 1 minuto entre preguntas
+        for pregunta, respuesta_esperada in preguntas_generales_empresa.items():
+            respuesta = st.text_area(f"📝 {pregunta}", key=f"gen_{pregunta}")
+            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": respuesta_esperada}
 
         st.subheader("📊 Preguntas Técnicas del Puesto")
-        for i, (pregunta, respuesta_esperada) in enumerate(puesto["preguntas"].items()):
-            st.write(f"📝 Pregunta {i + 1}: {pregunta}")
-            respuesta = st.text_area(f"Responda aquí:", key=f"tec_{pregunta}")
-            if st.button(f"Evaluar {pregunta[:20]}...", key=f"btn_tec_{pregunta}"):
-                evaluacion = evaluar_respuesta_gemini(pregunta, respuesta, respuesta_esperada)
-                st.write(f"Evaluación: {evaluacion}")
-                if "Correcto" in evaluacion:
-                    puntaje_total += 1
-                elif "Parcialmente Correcto" in evaluacion:
-                    puntaje_total += 0.5
-                time.sleep(60)  # Pausa de 1 minuto entre preguntas
-        
-        porcentaje_aciertos = (puntaje_total / total_preguntas) * 100
-        st.success(f"🎯 Puntaje final: **{porcentaje_aciertos:.2f}%**")
-        st.write("📩 Sus respuestas serán enviadas a Recursos Humanos para su evaluación.")
+
+        for pregunta, respuesta_esperada in puesto["preguntas"].items():
+            respuesta = st.text_area(f"📝 {pregunta}", key=f"tec_{pregunta}")
+            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": respuesta_esperada}
+
+        # Botón para evaluar todas las respuestas juntas
+        if st.button("📩 Enviar Entrevista y Obtener Feedback"):
+            feedback_total, porcentaje_aciertos = evaluar_respuestas_todas(st.session_state["respuestas_usuario"])
+            st.session_state["entrevista_completada"] = True
+
+            st.success(f"🎯 Puntaje final: **{porcentaje_aciertos:.2f}%**")
+            st.write("📩 Sus respuestas serán enviadas a Recursos Humanos para su evaluación.")
+            
+            # Mostrar feedback detallado
+            for pregunta, datos in feedback_total.items():
+                st.write(f"**{pregunta}**")
+                st.write(f"✅ Respuesta del usuario: {datos['respuesta_usuario']}")
+                st.write(f"📊 Evaluación: {datos['evaluacion']}")
+                st.write(f"🎯 Puntaje: {datos['puntaje']}/1")
+                st.write("---")

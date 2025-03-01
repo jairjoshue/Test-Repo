@@ -100,21 +100,20 @@ if "chat_history" not in st.session_state:
 def add_message(role, text):
     st.session_state["chat_history"].append({"role": role, "text": text})
 
-# Título del Chatbot
+# 📌 **Título del Chatbot**
 st.markdown("<h2>💬 Chat de Entrevista</h2>", unsafe_allow_html=True)
 
-# Mostrar el contenedor de chat
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+# 📌 **Contenedor de Chat sin Espacio en Blanco**
+chat_container = st.container()
 
-for msg in st.session_state["chat_history"]:
-    if msg["role"] == "bot":
-        st.markdown(f'<div class="message-container bot-container"><span class="bot-message">🤖 {msg["text"]}</span></div>', unsafe_allow_html=True)
-    else:
-        st.markdown(f'<div class="message-container user-container"><span class="user-message">👤 {msg["text"]}</span></div>', unsafe_allow_html=True)
+with chat_container:
+    for msg in st.session_state["chat_history"]:
+        if msg["role"] == "bot":
+            st.markdown(f'<div class="message-container bot-container"><span class="bot-message">🤖 {msg["text"]}</span></div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="message-container user-container"><span class="user-message">👤 {msg["text"]}</span></div>', unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# 📌 **Capturar mensaje con ENTER automáticamente**
+# 📌 **Captura de Mensaje con ENTER**
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("Escribe tu respuesta aquí:")
     submit_button = st.form_submit_button("Enviar Respuesta")

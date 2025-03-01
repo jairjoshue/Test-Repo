@@ -102,9 +102,13 @@ def evaluar_respuestas_todas(respuestas_usuario):
     return feedback_total, porcentaje_aciertos
 
 # UI Mejorada
-st.image("https://www.chinalco.com.pe/wp-content/uploads/2020/08/logo-chinalco-2.png", width=200)
+# UI Mejorada con el nuevo logo
+st.markdown('<div class="logo-container">', unsafe_allow_html=True)
+st.image("logo_mina.png", width=200)
+st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
 st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
+
 
 # Validación del postulante
 st.markdown("<h2>🔍 Validación de Identidad</h2>", unsafe_allow_html=True)

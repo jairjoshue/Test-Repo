@@ -147,3 +147,11 @@ if st.session_state["entrevista_iniciada"]:
             feedback_total, porcentaje_aciertos = evaluar_respuestas_todas(st.session_state["respuestas_usuario"])
             st.success(f"🎯 Puntaje final: **{porcentaje_aciertos:.2f}%**")
             st.write("📩 Sus respuestas serán enviadas a Recursos Humanos para su evaluación.")
+
+            # Mostrar feedback detallado
+            for pregunta, datos in feedback_total.items():
+                st.markdown(f"<div class='feedback-box'><h3>{pregunta}</h3>", unsafe_allow_html=True)
+                st.write(f"✅ Respuesta: {datos['respuesta_usuario']}")
+                st.write(f"📊 Evaluación: {datos['evaluacion']}")
+                st.write(f"🎯 Puntaje: {datos['puntaje']}/1")
+                st.markdown("</div>", unsafe_allow_html=True)

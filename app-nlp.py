@@ -9,3 +9,6 @@ try:
     print(response.text)
 except Exception as e:
     print(f"Error: {e}")
+
+st.write(f"✅ Evaluación: {evaluacion}")  # Forzamos a Streamlit a mostrar el texto
+st.text(evaluacion)  # Asegura que la salida se muestre correctamente

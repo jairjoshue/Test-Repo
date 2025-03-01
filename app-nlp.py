@@ -12,6 +12,20 @@ genai.configure(api_key=API_KEY)
 
 # Usar un modelo ligero para evitar bloqueos
 model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+import streamlit as st
+import google.generativeai as genai
+import json
+import os
+import random
+import time
+from datetime import datetime
+
+# Configurar la API de Gemini
+API_KEY = "TU_API_KEY_AQUI"
+genai.configure(api_key=API_KEY)
+
+# Usar un modelo ligero para evitar bloqueos
+model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
 # Cargar datos desde archivos JSON
 def cargar_json(nombre_archivo):
@@ -37,6 +51,8 @@ if "preguntas_ordenadas" not in st.session_state:
     st.session_state["preguntas_ordenadas"] = []
 if "entrevista_completada" not in st.session_state:
     st.session_state["entrevista_completada"] = False
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = []
 
 # Validar postulante
 def validar_postulante(nombre, documento):
@@ -109,31 +125,9 @@ def guardar_historial(nombre, documento, feedback_total, porcentaje_aciertos):
     with open(ruta, "w", encoding="utf-8") as file:
         json.dump(historial_existente, file, indent=4, ensure_ascii=False)
 
-# UI - Logo y título
+# UI - Estilo Chatbot
 st.image("logo-mina.png", width=200)
-st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
-st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
-
-st.markdown("""
-    <i>📌 Credenciales de prueba</i>
-    <p style="font-size: 10px; font-style: italic;">
-    Puedes usar los siguientes datos para probar la validación de postulantes:
-    </p>
-    <p style="font-size: 10px; font-style: italic;">
-    Nombre: Jairsinho Patiño
-    Documento: 10010010 <br>
-    Nombre: Juan Perez
-    Documento: 20020020 <br>
-    Nombre: Pepe Guzman
-    Documento: 30030030 <br>
-    Nombre: Manuel Burga
-    Documento: 40040040 <br>
-    Nombre: Maria Cuadro
-    Documento: 50050050 <br>
-    Nombre: Jose Machicao
-    Documento: 60060060
-    </p>
-    """, unsafe_allow_html=True)
+st.markdown("<h1>💬 Entrevista Virtual - Minera CHINALCO</h1>", unsafe_allow_html=True)
 
 # Validación del postulante
 st.markdown("<h2>🔍 Validación de Identidad</h2>", unsafe_allow_html=True)
@@ -147,48 +141,42 @@ if st.button("🔎 Validar Postulante"):
     if puesto:
         st.session_state["puesto"] = puesto
         st.session_state["entrevista_iniciada"] = True
-        st.success(f"✅ Validación exitosa para: {nombre}")
+        st.session_state["chat_history"].append(("📢", f"✅ Validación exitosa para {nombre}"))
 
         # Mensaje de bienvenida
-        st.markdown(f"""
-            <h2>🎉 Bienvenido a Minera CHINALCO</h2>
-            <p style="font-size: 14px;">
-            Gracias por postular con nosotros, <b>{nombre}</b>. 
-            Has sido registrado para el proceso de selección del puesto: <b>{puesto['nombre']}</b>.
-            </p>
-        """, unsafe_allow_html=True)
-
+        st.session_state["chat_history"].append(("👨‍💼", f"Bienvenido a Minera CHINALCO, {nombre}. Postulas al puesto de **{puesto['nombre']}**."))
+        
         iniciar_entrevista()
     else:
         st.error("❌ No encontramos su información. Contacte a inforrhh@chinalco.com.pe")
 
-# Entrevista
+# Entrevista - Estilo Chatbot
 if st.session_state["entrevista_iniciada"]:
     if st.checkbox("✅ Acepto las reglas de la entrevista"):
-        # Preguntas generales
-        st.markdown("<h2>📌 Preguntas Generales sobre Minera CHINALCO</h2>", unsafe_allow_html=True)
-        for pregunta, respuesta_esperada in preguntas_generales_empresa.items():
-            st.markdown(f"<div class='question-box'><h3>{pregunta}</h3></div>", unsafe_allow_html=True)
-            respuesta = st.text_area(f"Responda aquí:", key=pregunta)
-            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": respuesta_esperada}
 
-        # Preguntas técnicas
-        st.markdown(f"<h2>📊 Preguntas Técnicas para {st.session_state['puesto']['nombre']}</h2>", unsafe_allow_html=True)
+        st.markdown("<h2>💬 Chat de Entrevista</h2>", unsafe_allow_html=True)
+
+        for rol, mensaje in st.session_state["chat_history"]:
+            if rol == "👨‍💼":
+                st.markdown(f"<div style='text-align: left; padding: 5px; background-color: #f1f1f1; border-radius: 10px;'>{rol} {mensaje}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div style='text-align: right; padding: 5px; background-color: #d1e7fd; border-radius: 10px;'>{rol} {mensaje}</div>", unsafe_allow_html=True)
+
+        # Preguntas de la entrevista
         for pregunta, respuesta_esperada in st.session_state["preguntas_ordenadas"]:
-            st.markdown(f"<div class='question-box'><h3>{pregunta}</h3></div>", unsafe_allow_html=True)
-            respuesta = st.text_area(f"Responda aquí:", key=pregunta)
-            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": respuesta_esperada}
+            respuesta = st.text_input(f"{pregunta}", key=pregunta)
+            if respuesta:
+                st.session_state["chat_history"].append(("👤", respuesta))
+                st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": respuesta_esperada}
+                time.sleep(1)
 
         if st.button("📩 Enviar Entrevista"):
             feedback_total, porcentaje_aciertos = evaluar_respuestas(st.session_state["respuestas_usuario"])
-            guardar_historial(nombre, documento, st.session_state["puesto"], feedback_total, porcentaje_aciertos)
+            guardar_historial(nombre, documento, feedback_total, porcentaje_aciertos)
 
-            # Mensaje al postulante
-            st.success(f"""
-                🎯 Puntaje final: {porcentaje_aciertos:.2f}%
-                📩 Sus respuestas han sido enviadas a Recursos Humanos de Minera CHINALCO.
-                Para consultas, contáctenos en inforrhh@chinalco.com.pe.
-            """)
+            # Mensaje final al postulante
+            st.session_state["chat_history"].append(("📢", f"🎯 Puntaje final: **{porcentaje_aciertos:.2f}%**"))
+            st.session_state["chat_history"].append(("📢", "📩 Sus respuestas han sido enviadas a Recursos Humanos de Minera CHINALCO."))
 
             # Informe a RRHH
             st.markdown("### 📑 Informe Enviado a Recursos Humanos")

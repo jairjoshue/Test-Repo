@@ -4,7 +4,7 @@ import random
 import google.generativeai as genai
 
 # Configurar API de Gemini (¡Reemplaza con tu clave!)
-API_KEY = "TU_API_KEY_AQUI"
+API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel(model_name="gemini-pro")
 

@@ -1,14 +1,16 @@
+import streamlit as st
 import google.generativeai as genai
 
+# Configurar API de Gemini
 API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
 genai.configure(api_key=API_KEY)
 
+# Prueba rápida para ver si Gemini responde
+st.subheader("🔍 Test de Conexión con Gemini")
+
 try:
     model = genai.GenerativeModel(model_name="gemini-pro")
-    response = model.generate_content("Hola, ¿cómo estás?")
-    print(response.text)
+    test_response = model.generate_content("Dime una frase motivadora.")
+    st.write(f"✅ Respuesta de prueba: {test_response.text}")  # Se muestra en Streamlit
 except Exception as e:
-    print(f"Error: {e}")
-
-st.write(f"✅ Evaluación: {evaluacion}")  # Forzamos a Streamlit a mostrar el texto
-st.text(evaluacion)  # Asegura que la salida se muestre correctamente
+    st.error(f"❌ Error al conectar con Gemini: {e}")  # Se muestra en pantalla

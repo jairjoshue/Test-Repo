@@ -96,10 +96,6 @@ if "chat_history" not in st.session_state:
         {"role": "bot", "text": "Voy a realizarte algunas preguntas sobre tu experiencia y conocimientos."}
     ]
 
-# Inicializar el input en la sesión si no existe
-if "user_input" not in st.session_state:
-    st.session_state["user_input"] = ""
-
 # Función para agregar mensajes al historial
 def add_message(role, text):
     st.session_state["chat_history"].append({"role": role, "text": text})
@@ -118,12 +114,13 @@ for msg in st.session_state["chat_history"]:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Input de usuario con detección de tecla "Enter"
-user_input = st.text_input("Escribe tu respuesta aquí:", key="user_input", on_change=lambda: st.session_state.update({"user_input": ""}))
+# 📌 **Capturar mensaje con ENTER automáticamente**
+with st.form(key="chat_form", clear_on_submit=True):
+    user_input = st.text_input("Escribe tu respuesta aquí:")
+    submit_button = st.form_submit_button("Enviar Respuesta")
 
-if user_input:
+if submit_button and user_input:
     add_message("user", user_input)  # Agregar mensaje del usuario
     time.sleep(1)  # Simula una pausa antes de la respuesta del bot
     add_message("bot", "Gracias por tu respuesta. Ahora dime...")  # Respuesta simulada del bot
-    st.session_state["user_input"] = ""  # Limpiar input después de enviar
     st.rerun()  # Recargar la interfaz para mostrar los nuevos mensajes

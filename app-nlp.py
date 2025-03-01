@@ -10,7 +10,7 @@ model = genai.GenerativeModel(model_name="gemini-pro")
 
 # Datos simulados de postulantes y preguntas
 postulantes = [
-    {"nombre": "Jairsinho Patiño Franco", "documento": "10010010", "codigo_puesto": "A1"},
+    {"nombre": "Jairsinho Patiño", "documento": "10010010", "codigo_puesto": "A1"},
     {"nombre": "Juan Perez", "documento": "20020020", "codigo_puesto": "A1"},
     {"nombre": "Pepe Guzman", "documento": "30030030", "codigo_puesto": "B2"},
     {"nombre": "Manuel Burga", "documento": "40040040", "codigo_puesto": "B2"},

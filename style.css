@@ -1,0 +1,63 @@
+/* Estilos Generales */
+body {
+    background-color: #f8f9fa;
+    font-family: 'Arial', sans-serif;
+    color: #333;
+}
+
+/* Header */
+h1 {
+    color: #004A99;
+    text-align: center;
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+h2 {
+    color: #004A99;
+    font-size: 1.5em;
+}
+
+/* Botones */
+.stButton>button {
+    background-color: #004A99 !important;
+    color: white !important;
+    border-radius: 8px;
+    font-size: 16px;
+    padding: 10px 20px;
+    border: none;
+}
+
+.stButton>button:hover {
+    background-color: #003366 !important;
+}
+
+/* Entradas de Texto */
+.stTextInput>div>div>input {
+    border-radius: 8px;
+    border: 1px solid #004A99;
+    padding: 10px;
+    font-size: 16px;
+}
+
+/* Tarjetas de Preguntas */
+.question-box {
+    background: #e6f2ff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.question-box h3 {
+    color: #004A99;
+}
+
+/* Feedback */
+.feedback-box {
+    background: #dff0d8;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+

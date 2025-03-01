@@ -9,7 +9,7 @@ genai.configure(api_key=API_KEY)
 st.subheader("🔍 Test de Conexión con Gemini")
 
 try:
-    model = genai.GenerativeModel(model_name="gemini-pro")
+    model = genai.GenerativeModel(model_name="gemini-1.5-pro")  # Cambiar a la versión más reciente
     test_response = model.generate_content("Dime una frase motivadora.")
     st.write(f"✅ Respuesta de prueba: {test_response.text}")  # Se muestra en Streamlit
 except Exception as e:

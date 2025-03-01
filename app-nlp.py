@@ -27,7 +27,7 @@ postulantes = cargar_json("postulantes.json")
 preguntas_generales_empresa = cargar_json("preguntas_generales.json")
 puestos = cargar_json("puestos.json")
 
-# Inicializar historial de chat
+# Inicializar historial de chat y variables de estado
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
@@ -46,45 +46,18 @@ if "preguntas_tecnicas" not in st.session_state:
 if "puesto_actual" not in st.session_state:
     st.session_state["puesto_actual"] = None
 
-# Función para agregar mensajes al chat
+# ✅ **Añadir mensaje al historial del chat**
 def add_message(role, text):
     st.session_state["chat_history"].append({"role": role, "text": text})
 
-# Parafrasear pregunta con Gemini
-def parafrasear_pregunta(pregunta):
-    prompt = f"Parafrasea la siguiente pregunta sin cambiar su significado: {pregunta}"
-    response = model.generate_content(prompt)
-    return response.text.strip() if response else pregunta
+# ✅ **Forzar que el primer mensaje SIEMPRE se muestre**
+if not st.session_state["chat_history"]:
+    add_message("bot", "👋 ¡Hola! Bienvenido a la entrevista virtual de Minera CHINALCO. Te guiaré en el proceso.")
 
-# Evaluar respuestas con IA
-def evaluar_respuesta(pregunta, respuesta, respuesta_esperada):
-    prompt = f"""
-    Evalúa la respuesta del candidato en comparación con la respuesta esperada.
-    Devuelve una puntuación (1: Correcto, 0.5: Parcialmente Correcto, 0: Incorrecto) y una justificación.
-    Pregunta: {pregunta}
-    Respuesta del candidato: {respuesta}
-    Respuesta esperada: {respuesta_esperada}
-    """
-    response = model.generate_content(prompt)
-    return response.text.strip()
-
-# Guardar historial de entrevistas
-def guardar_historial():
-    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    historial = {
-        "nombre": st.session_state["nombre_postulante"],
-        "documento": st.session_state["documento_postulante"],
-        "fecha": fecha_actual,
-        "puesto": st.session_state["puesto_actual"],
-        "respuestas": st.session_state["respuestas_usuario"]
-    }
-    guardar_json("historial.json", historial)
-
-# UI de Chatbot
+# ✅ **Renderizar historial de chat ANTES de la caja de texto**
 st.markdown("<h2>💬 Chat de Entrevista</h2>", unsafe_allow_html=True)
-chat_container = st.container()
 
-# Mostrar historial de chat
+chat_container = st.container()
 with chat_container:
     for msg in st.session_state["chat_history"]:
         if msg["role"] == "bot":
@@ -92,44 +65,12 @@ with chat_container:
         else:
             st.markdown(f'<div class="user-message">👤 {msg["text"]}</div>', unsafe_allow_html=True)
 
-# Proceso de entrevista
-if not st.session_state["entrevista_iniciada"]:
-    if not st.session_state.get("nombre_postulante"):
-        add_message("bot", "Hola, bienvenido a la entrevista virtual de Minera CHINALCO. ¿Cuál es tu nombre completo?")
-    else:
-        add_message("bot", "Por favor, ingresa tu número de documento de identidad para validar tu postulación.")
-
-elif st.session_state["entrevista_iniciada"]:
-    if not st.session_state["preguntas_generales"]:
-        for pregunta in preguntas_generales_empresa.keys():
-            st.session_state["preguntas_generales"].append(parafrasear_pregunta(pregunta))
-    
-    if not st.session_state["preguntas_tecnicas"]:
-        preguntas_puesto = puestos[st.session_state["puesto_actual"]]["preguntas"]
-        preguntas_aleatorias = list(preguntas_puesto.keys())
-        random.shuffle(preguntas_aleatorias)
-        for pregunta in preguntas_aleatorias:
-            st.session_state["preguntas_tecnicas"].append(parafrasear_pregunta(pregunta))
-
-    if st.session_state["preguntas_generales"]:
-        pregunta_actual = st.session_state["preguntas_generales"].pop(0)
-        add_message("bot", pregunta_actual)
-
-    elif st.session_state["preguntas_tecnicas"]:
-        pregunta_actual = st.session_state["preguntas_tecnicas"].pop(0)
-        add_message("bot", pregunta_actual)
-
-    else:
-        add_message("bot", "La entrevista ha finalizado. Tus respuestas han sido enviadas a Recursos Humanos. ¡Gracias por participar!")
-        guardar_historial()
-        st.session_state["entrevista_iniciada"] = False
-
-# Captura de texto
+# ✅ **Caja de texto debe estar debajo del chat**
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("Escribe tu respuesta aquí:")
     submit_button = st.form_submit_button("Enviar Respuesta")
 
-# Procesar respuesta del usuario
+# ✅ **Procesar la respuesta y continuar la entrevista**
 if submit_button and user_input:
     add_message("user", user_input)
 
@@ -146,5 +87,5 @@ if submit_button and user_input:
             st.session_state["entrevista_iniciada"] = True
         else:
             add_message("bot", "Tu documento no está registrado. Contacta a inforrhh@chinalco.com.pe.")
-    
+
     st.rerun()

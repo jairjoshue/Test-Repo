@@ -10,7 +10,7 @@ model = genai.GenerativeModel(model_name="gemini-pro")
 
 # Datos simulados de postulantes y preguntas
 postulantes = [
-    {"nombre": "Jairsinho Patiño", "documento": "10010010", "codigo_puesto": "A1"},
+    {"nombre": "Jairsinho Patiño Franco", "documento": "10010010", "codigo_puesto": "A1"},
     {"nombre": "Juan Perez", "documento": "20020020", "codigo_puesto": "A1"},
     {"nombre": "Pepe Guzman", "documento": "30030030", "codigo_puesto": "B2"},
     {"nombre": "Manuel Burga", "documento": "40040040", "codigo_puesto": "B2"},
@@ -54,7 +54,7 @@ def evaluar_respuesta_gemini(pregunta, respuesta, respuesta_esperada):
     response = model.generate_content(prompt)
     return response.text.strip()
 
-# Streamlit UI
+# Interfaz en Streamlit
 st.title("🛠️ Chatbot de Entrevistas - Minera CHINALCO")
 st.write("Simulador de entrevistas con evaluación de respuestas mediante IA.")
 
@@ -62,13 +62,14 @@ st.write("Simulador de entrevistas con evaluación de respuestas mediante IA.")
 nombre = st.text_input("Ingrese su nombre completo:")
 documento = st.text_input("Ingrese su documento de identidad:")
 
-
+# Validar postulante
 if st.button("Validar Postulante"):
     puesto, codigo_puesto = validar_postulante(nombre, documento)
     
     if puesto:
+        st.session_state["puesto"] = puesto  # Guardar puesto en session_state
+        st.session_state["entrevista_iniciada"] = True
         st.success(f"✅ Validación exitosa. Usted está postulando para: **{puesto['nombre']}**")
-        st.session_state["entrevista_iniciada"] = True  # Guarda el estado de la entrevista
     else:
         st.error("❌ No encontramos su información en nuestra base de datos. Para dudas, escriba a inforrhh@chinalco.com.pe")
 
@@ -77,6 +78,7 @@ if "entrevista_iniciada" in st.session_state and st.session_state["entrevista_in
     iniciar = st.checkbox("Acepto las reglas de la entrevista.")
     
     if iniciar:
+        puesto = st.session_state["puesto"]  # Recuperar puesto desde session_state
         st.subheader("📋 Preguntas Generales sobre la Empresa")
         puntaje_total = 0
         total_preguntas = len(preguntas_generales_empresa) + len(puesto["preguntas"])
@@ -105,6 +107,3 @@ if "entrevista_iniciada" in st.session_state and st.session_state["entrevista_in
         porcentaje_aciertos = (puntaje_total / total_preguntas) * 100
         st.success(f"🎯 Puntaje final: **{porcentaje_aciertos:.2f}%**")
         st.write("📩 Sus respuestas serán enviadas a Recursos Humanos para su evaluación.")
-
-
-

@@ -114,6 +114,27 @@ st.image("logo-mina.png", width=200)
 st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
 st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
 
+st.markdown("""
+    <i>📌 Credenciales de prueba</i>
+    <p style="font-size: 8px; font-style: italic;">
+    Puedes usar los siguientes datos para probar la validación de postulantes:
+    </p>
+    <pre style="font-size: 8px; font-style: italic;">
+    Nombre: Jairsinho Patiño
+    Documento: 10010010 <br>
+    Nombre: Juan Perez
+    Documento: 20020020 <br>
+    Nombre: Pepe Guzman
+    Documento: 30030030 <br>
+    Nombre: Manuel Burga
+    Documento: 40040040 <br>
+    Nombre: Maria Cuadro
+    Documento: 50050050 <br>
+    Nombre: Jose Machicao
+    Documento: 60060060
+    </pre>
+    """, unsafe_allow_html=True)
+
 # Validación del postulante
 st.markdown("<h2>🔍 Validación de Identidad</h2>", unsafe_allow_html=True)
 

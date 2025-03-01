@@ -121,13 +121,12 @@ load_css()
 st.image("logo-mina.png", width=200)
 st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
 st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
-st.markdown("<h2>📌 Credenciales de prueba</h2>", unsafe_allow_html=True)
 st.markdown("""
     <h2>📌 Credenciales de prueba</h2>
-    <p style="font-size: 8px; font-style: italic;">
+    <p style="font-size: 10px; font-style: italic;">
     Puedes usar los siguientes datos para probar la validación de postulantes:
     </p>
-    <p style="font-size: 8px; font-style: italic;">
+    <p style="font-size: 10px; font-style: italic;">
     Nombre: Jairsinho Patiño
     Documento: 10010010 || 
     Nombre: Juan Perez

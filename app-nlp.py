@@ -6,26 +6,24 @@ import random
 import time
 from datetime import datetime
 
-# Cargar CSS personalizado
-def load_css():
-    with open("style.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-# Llamar la función al inicio
-load_css()
-
 # Configurar la API de Gemini
 API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
 genai.configure(api_key=API_KEY)
 
 # Usar un modelo ligero para evitar bloqueos
 model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-# Cargar los datos desde archivos JSON en la raíz
+
+# 🔹 Cargar estilos desde un archivo CSS externo
+def load_css():
+    with open("style.css", "r") as css_file:
+        st.markdown(f"<style>{css_file.read()}</style>", unsafe_allow_html=True)
+
+# 🔹 Cargar datos desde archivos JSON
 def cargar_json(nombre_archivo):
     with open(nombre_archivo, "r", encoding="utf-8") as archivo:
         return json.load(archivo)
 
-# Guardar datos en archivos JSON en la raíz
+# 🔹 Guardar datos en archivos JSON
 def guardar_json(nombre_archivo, datos):
     with open(nombre_archivo, "w", encoding="utf-8") as archivo:
         json.dump(datos, archivo, indent=4, ensure_ascii=False)
@@ -35,7 +33,7 @@ postulantes = cargar_json("postulantes.json")
 preguntas_generales_empresa = cargar_json("preguntas_generales.json")
 puestos = cargar_json("puestos.json")
 
-# Configuración de la aplicación en Streamlit
+# 🔹 Configuración del estado de la aplicación en Streamlit
 if "entrevista_iniciada" not in st.session_state:
     st.session_state["entrevista_iniciada"] = False
 if "respuestas_usuario" not in st.session_state:
@@ -45,23 +43,22 @@ if "preguntas_ordenadas" not in st.session_state:
 if "entrevista_completada" not in st.session_state:
     st.session_state["entrevista_completada"] = False
 
-# Validar postulante
+# 🔹 Validar postulante
 def validar_postulante(nombre, documento):
     for postulante in postulantes:
         if postulante["nombre"].lower() == nombre.lower() and postulante["documento"] == documento:
             return puestos.get(postulante["codigo_puesto"]), postulante["codigo_puesto"]
     return None, None
 
-# Iniciar la entrevista (se mezclan preguntas solo la primera vez)
+# 🔹 Iniciar la entrevista (se mezclan preguntas solo la primera vez)
 def iniciar_entrevista():
     puesto = st.session_state["puesto"]
-    
     if not st.session_state["preguntas_ordenadas"]:
         preguntas = list(puesto["preguntas"].items())
         random.shuffle(preguntas)  # Mezclar solo una vez
         st.session_state["preguntas_ordenadas"] = preguntas
 
-# Evaluación con IA (Gemini)
+# 🔹 Evaluación con IA (Gemini)
 def evaluar_respuestas(respuestas_usuario):
     feedback_total = {}
     puntaje_total = 0
@@ -98,12 +95,12 @@ def evaluar_respuestas(respuestas_usuario):
     porcentaje_aciertos = (puntaje_total / total_preguntas) * 100
     return feedback_total, porcentaje_aciertos
 
-# Guardar historial de entrevistas
+# 🔹 Guardar historial de entrevistas
 def guardar_historial(nombre, documento, feedback_total, porcentaje_aciertos):
     fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     historial = {"nombre": nombre, "documento": documento, "fecha": fecha_actual, 
                  "puntaje": porcentaje_aciertos, "respuestas": feedback_total}
-    
+
     ruta = "historial.json"
     if os.path.exists(ruta):
         with open(ruta, "r", encoding="utf-8") as file:
@@ -112,19 +109,19 @@ def guardar_historial(nombre, documento, feedback_total, porcentaje_aciertos):
         historial_existente = []
 
     historial_existente.append(historial)
-    
+
     with open(ruta, "w", encoding="utf-8") as file:
         json.dump(historial_existente, file, indent=4, ensure_ascii=False)
 
 # Cargar CSS
 load_css()
 
-# UI - Logo y título
+# 🔹 UI - Logo y título
 st.markdown('<div class="logo-container"><img src="logo-mina.png" width="200"></div>', unsafe_allow_html=True)
 st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
 st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
 
-# Validación del postulante
+# 🔹 Validación del postulante
 st.markdown("<h2>🔍 Validación de Identidad</h2>", unsafe_allow_html=True)
 
 nombre = st.text_input("Ingrese su nombre completo:")
@@ -141,7 +138,7 @@ if st.button("🔎 Validar Postulante"):
     else:
         st.error("❌ No encontramos su información. Contacte a inforrhh@chinalco.com.pe")
 
-# Entrevista
+# 🔹 Entrevista
 if st.session_state["entrevista_iniciada"]:
     if st.checkbox("Acepto las reglas de la entrevista."):
         for pregunta, respuesta_esperada in st.session_state["preguntas_ordenadas"]:

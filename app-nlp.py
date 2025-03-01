@@ -1,125 +1,149 @@
 import streamlit as st
+import google.generativeai as genai
+import json
+import os
+import random
 import time
+from datetime import datetime
 
-# Cargar estilos CSS para simular WhatsApp
-st.markdown("""
-    <style>
-        /* Contenedor principal del chat */
-        .chat-container {
-            width: 100%;
-            max-width: 500px;
-            margin: auto;
-            background: #f0f0f0;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            height: 500px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
+# Configurar la API de Gemini
+API_KEY = "TU_API_KEY_AQUI"
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
-        /* Mensajes del bot */
-        .bot-message {
-            background: #dcf8c6;
-            color: black;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            max-width: 80%;
-            display: inline-block;
-        }
+# Cargar datos desde archivos JSON
+def cargar_json(nombre_archivo):
+    with open(nombre_archivo, "r", encoding="utf-8") as archivo:
+        return json.load(archivo)
 
-        /* Mensajes del usuario */
-        .user-message {
-            background: #ffffff;
-            color: black;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            max-width: 80%;
-            display: inline-block;
-            align-self: flex-end;
-        }
+# Guardar datos en archivos JSON
+def guardar_json(nombre_archivo, datos):
+    with open(nombre_archivo, "w", encoding="utf-8") as archivo:
+        json.dump(datos, archivo, indent=4, ensure_ascii=False)
 
-        /* Contenedor de cada mensaje */
-        .message-container {
-            display: flex;
-            width: 100%;
-            margin-bottom: 10px;
-        }
+# Cargar base de datos
+postulantes = cargar_json("postulantes.json")
+preguntas_generales_empresa = cargar_json("preguntas_generales.json")
+puestos = cargar_json("puestos.json")
 
-        .bot-container {
-            justify-content: flex-start;
-        }
-
-        .user-container {
-            justify-content: flex-end;
-        }
-
-        /* Estilo del input de usuario */
-        .input-container {
-            display: flex;
-            margin-top: 15px;
-        }
-
-        .input-text {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 14px;
-            outline: none;
-        }
-
-        .send-button {
-            background: #25D366;
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            margin-left: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .send-button:hover {
-            background: #1ebe57;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-# Inicializar historial de chat en sesión si no existe
+# Inicializar historial de chat
 if "chat_history" not in st.session_state:
-    st.session_state["chat_history"] = [
-        {"role": "bot", "text": "Hola, bienvenido a la entrevista virtual de Minera CHINALCO."},
-        {"role": "bot", "text": "Voy a realizarte algunas preguntas sobre tu experiencia y conocimientos."}
-    ]
+    st.session_state["chat_history"] = []
 
-# Función para agregar mensajes al historial
+if "entrevista_iniciada" not in st.session_state:
+    st.session_state["entrevista_iniciada"] = False
+
+if "respuestas_usuario" not in st.session_state:
+    st.session_state["respuestas_usuario"] = {}
+
+if "preguntas_generales" not in st.session_state:
+    st.session_state["preguntas_generales"] = []
+
+if "preguntas_tecnicas" not in st.session_state:
+    st.session_state["preguntas_tecnicas"] = []
+
+if "puesto_actual" not in st.session_state:
+    st.session_state["puesto_actual"] = None
+
+# Función para agregar mensajes al chat
 def add_message(role, text):
     st.session_state["chat_history"].append({"role": role, "text": text})
 
-# 📌 **Título del Chatbot**
-st.markdown("<h2>💬 Chat de Entrevista</h2>", unsafe_allow_html=True)
+# Parafrasear pregunta con Gemini
+def parafrasear_pregunta(pregunta):
+    prompt = f"Parafrasea la siguiente pregunta sin cambiar su significado: {pregunta}"
+    response = model.generate_content(prompt)
+    return response.text.strip() if response else pregunta
 
-# 📌 **Contenedor de Chat sin Espacio en Blanco**
+# Evaluar respuestas con IA
+def evaluar_respuesta(pregunta, respuesta, respuesta_esperada):
+    prompt = f"""
+    Evalúa la respuesta del candidato en comparación con la respuesta esperada.
+    Devuelve una puntuación (1: Correcto, 0.5: Parcialmente Correcto, 0: Incorrecto) y una justificación.
+    Pregunta: {pregunta}
+    Respuesta del candidato: {respuesta}
+    Respuesta esperada: {respuesta_esperada}
+    """
+    response = model.generate_content(prompt)
+    return response.text.strip()
+
+# Guardar historial de entrevistas
+def guardar_historial():
+    fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    historial = {
+        "nombre": st.session_state["nombre_postulante"],
+        "documento": st.session_state["documento_postulante"],
+        "fecha": fecha_actual,
+        "puesto": st.session_state["puesto_actual"],
+        "respuestas": st.session_state["respuestas_usuario"]
+    }
+    guardar_json("historial.json", historial)
+
+# UI de Chatbot
+st.markdown("<h2>💬 Chat de Entrevista</h2>", unsafe_allow_html=True)
 chat_container = st.container()
 
+# Mostrar historial de chat
 with chat_container:
     for msg in st.session_state["chat_history"]:
         if msg["role"] == "bot":
-            st.markdown(f'<div class="message-container bot-container"><span class="bot-message">🤖 {msg["text"]}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="bot-message">🤖 {msg["text"]}</div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="message-container user-container"><span class="user-message">👤 {msg["text"]}</span></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="user-message">👤 {msg["text"]}</div>', unsafe_allow_html=True)
 
-# 📌 **Captura de Mensaje con ENTER**
+# Proceso de entrevista
+if not st.session_state["entrevista_iniciada"]:
+    if not st.session_state.get("nombre_postulante"):
+        add_message("bot", "Hola, bienvenido a la entrevista virtual de Minera CHINALCO. ¿Cuál es tu nombre completo?")
+    else:
+        add_message("bot", "Por favor, ingresa tu número de documento de identidad para validar tu postulación.")
+
+elif st.session_state["entrevista_iniciada"]:
+    if not st.session_state["preguntas_generales"]:
+        for pregunta in preguntas_generales_empresa.keys():
+            st.session_state["preguntas_generales"].append(parafrasear_pregunta(pregunta))
+    
+    if not st.session_state["preguntas_tecnicas"]:
+        preguntas_puesto = puestos[st.session_state["puesto_actual"]]["preguntas"]
+        preguntas_aleatorias = list(preguntas_puesto.keys())
+        random.shuffle(preguntas_aleatorias)
+        for pregunta in preguntas_aleatorias:
+            st.session_state["preguntas_tecnicas"].append(parafrasear_pregunta(pregunta))
+
+    if st.session_state["preguntas_generales"]:
+        pregunta_actual = st.session_state["preguntas_generales"].pop(0)
+        add_message("bot", pregunta_actual)
+
+    elif st.session_state["preguntas_tecnicas"]:
+        pregunta_actual = st.session_state["preguntas_tecnicas"].pop(0)
+        add_message("bot", pregunta_actual)
+
+    else:
+        add_message("bot", "La entrevista ha finalizado. Tus respuestas han sido enviadas a Recursos Humanos. ¡Gracias por participar!")
+        guardar_historial()
+        st.session_state["entrevista_iniciada"] = False
+
+# Captura de texto
 with st.form(key="chat_form", clear_on_submit=True):
     user_input = st.text_input("Escribe tu respuesta aquí:")
     submit_button = st.form_submit_button("Enviar Respuesta")
 
+# Procesar respuesta del usuario
 if submit_button and user_input:
-    add_message("user", user_input)  # Agregar mensaje del usuario
-    time.sleep(1)  # Simula una pausa antes de la respuesta del bot
-    add_message("bot", "Gracias por tu respuesta. Ahora dime...")  # Respuesta simulada del bot
-    st.rerun()  # Recargar la interfaz para mostrar los nuevos mensajes
+    add_message("user", user_input)
+
+    if not st.session_state.get("nombre_postulante"):
+        st.session_state["nombre_postulante"] = user_input
+        add_message("bot", f"Gracias {user_input}. Ahora ingresa tu número de documento.")
+
+    elif not st.session_state.get("documento_postulante"):
+        postulante = next((p for p in postulantes if p["documento"] == user_input), None)
+        if postulante:
+            st.session_state["documento_postulante"] = user_input
+            st.session_state["puesto_actual"] = postulante["codigo_puesto"]
+            add_message("bot", f"¡Bienvenido {postulante['nombre']}! Estás postulando para {puestos[postulante['codigo_puesto']]['nombre']}. Acepta los términos para iniciar la entrevista.")
+            st.session_state["entrevista_iniciada"] = True
+        else:
+            add_message("bot", "Tu documento no está registrado. Contacta a inforrhh@chinalco.com.pe.")
+    
+    st.rerun()

@@ -26,9 +26,9 @@ def cargar_json(filepath):
         return json.load(file)
 
 # Cargar datos desde archivos JSON
-postulantes = cargar_json("data/postulantes.json")
-preguntas_generales = cargar_json("data/preguntas_generales.json")
-puestos = cargar_json("data/puestos.json")
+postulantes = cargar_json("postulantes.json")
+preguntas_generales = cargar_json("preguntas_generales.json")
+puestos = cargar_json("puestos.json")
 
 # Inicializar sesión de usuario
 if "entrevista_iniciada" not in st.session_state:

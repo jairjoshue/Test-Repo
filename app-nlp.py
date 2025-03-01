@@ -12,20 +12,6 @@ genai.configure(api_key=API_KEY)
 
 # Usar un modelo ligero para evitar bloqueos
 model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-import streamlit as st
-import google.generativeai as genai
-import json
-import os
-import random
-import time
-from datetime import datetime
-
-# Configurar la API de Gemini
-API_KEY = "TU_API_KEY_AQUI"
-genai.configure(api_key=API_KEY)
-
-# Usar un modelo ligero para evitar bloqueos
-model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
 # Cargar datos desde archivos JSON
 def cargar_json(nombre_archivo):

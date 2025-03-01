@@ -117,7 +117,8 @@ def guardar_historial(nombre, documento, feedback_total, porcentaje_aciertos):
 load_css()
 
 # 🔹 UI - Logo y título
-st.markdown('<div class="logo-container"><img src="logo-mina.png" width="200"></div>', unsafe_allow_html=True)
+#st.markdown('<div class="logo-container"><img src="logo-mina.png" width="200"></div>', unsafe_allow_html=True)
+st.image("logo-mina.png", width=200)
 st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
 st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
 

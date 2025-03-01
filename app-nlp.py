@@ -122,17 +122,31 @@ st.image("logo-mina.png", width=200)
 st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
 st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
 st.markdown("<h2>📌 Credenciales de prueba</h2>", unsafe_allow_html=True)
-st.write("Puedes usar los siguientes datos para probar la validación de postulantes:")
-st.code("""
-Nombre: Jairsinho Patiño
-Documento: 10010010
+st.markdown("""
+    <h2>📌 Credenciales de prueba</h2>
+    <p style="font-size: 8px; font-style: italic;">
+    Puedes usar los siguientes datos para probar la validación de postulantes:
+    </p>
+    <pre style="font-size: 8px; font-style: italic;">
+    Nombre: Jairsinho Patiño
+    Documento: 10010010
 
-Nombre: Juan Perez
-Documento: 20020020
+    Nombre: Juan Perez
+    Documento: 20020020
 
-Nombre: Pepe Guzman
-Documento: 30030030
-""", language="plaintext")
+    Nombre: Pepe Guzman
+    Documento: 30030030
+
+    Nombre: Manuel Burga
+    Documento: 40040040
+
+    Nombre: Maria Cuadro
+    Documento: 50050050
+
+    Nombre: Jose Machicao
+    Documento: 60060060
+    </pre>
+    """, unsafe_allow_html=True)
 
 # 🔹 Validación del postulante
 st.markdown("<h2>🔍 Validación de Identidad</h2>", unsafe_allow_html=True)
@@ -147,6 +161,21 @@ if st.button("🔎 Validar Postulante"):
         st.session_state["puesto"] = puesto
         st.session_state["entrevista_iniciada"] = True
         st.success(f"✅ Validación exitosa para: {nombre}")
+
+        # 🔹 Mensaje de bienvenida antes de iniciar la entrevista
+        st.markdown(f"""
+            <h2>🎉 Bienvenido a Minera CHINALCO</h2>
+            <p style="font-size: 14px;">
+            Gracias por postular con nosotros, <b>{nombre}</b>. 
+            Has sido registrado para el proceso de selección del puesto: <b>{puesto['nombre']}</b>.
+            </p>
+            <p style="font-size: 14px;">
+            La entrevista se desarrollará en dos etapas:<br>
+            1️⃣ Preguntas generales sobre la empresa.<br>
+            2️⃣ Preguntas técnicas relacionadas con el puesto al que postulas.<br>
+            </p>
+        """, unsafe_allow_html=True)
+        
         iniciar_entrevista()
     else:
         st.error("❌ No encontramos su información. Contacte a inforrhh@chinalco.com.pe")

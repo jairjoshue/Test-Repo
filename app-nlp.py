@@ -116,10 +116,10 @@ st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", u
 
 st.markdown("""
     <i>📌 Credenciales de prueba</i>
-    <p style="font-size: 8px; font-style: italic;">
+    <p style="font-size: 10px; font-style: italic;">
     Puedes usar los siguientes datos para probar la validación de postulantes:
     </p>
-    <pre style="font-size: 8px; font-style: italic;">
+    <p style="font-size: 10px; font-style: italic;">
     Nombre: Jairsinho Patiño
     Documento: 10010010 <br>
     Nombre: Juan Perez
@@ -132,7 +132,7 @@ st.markdown("""
     Documento: 50050050 <br>
     Nombre: Jose Machicao
     Documento: 60060060
-    </pre>
+    </p>
     """, unsafe_allow_html=True)
 
 # Validación del postulante

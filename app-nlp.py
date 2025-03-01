@@ -181,7 +181,21 @@ if st.session_state["entrevista_iniciada"]:
 
         if st.button("📩 Enviar Entrevista"):
             feedback_total, porcentaje_aciertos = evaluar_respuestas(st.session_state["respuestas_usuario"])
-            guardar_historial(nombre, documento, feedback_total, porcentaje_aciertos)
-            st.success(f"🎯 Puntaje final: {porcentaje_aciertos:.2f}%")
-            for pregunta, datos in feedback_total.items():
-                st.write(f"📊 {pregunta}: {datos['evaluacion']}")
+            guardar_historial(nombre, documento, st.session_state["puesto"], feedback_total, porcentaje_aciertos)
+
+            # Mensaje al postulante
+            st.success(f"""
+                🎯 Puntaje final: {porcentaje_aciertos:.2f}%
+                📩 Sus respuestas han sido enviadas a Recursos Humanos de Minera CHINALCO.
+                Para consultas, contáctenos en inforrhh@chinalco.com.pe.
+            """)
+
+            # Informe a RRHH
+            st.markdown("### 📑 Informe Enviado a Recursos Humanos")
+            st.json({
+                "nombre": nombre,
+                "documento": documento,
+                "puesto": st.session_state["puesto"]["nombre"],
+                "puntaje_final": porcentaje_aciertos,
+                "detalles": feedback_total
+            })

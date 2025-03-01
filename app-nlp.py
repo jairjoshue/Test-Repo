@@ -94,7 +94,7 @@ def guardar_datos(nombre, documento, feedback_total, puntaje_final):
         "feedback": feedback_total
     }
 
-    with open("data/feedback.json", "r+", encoding="utf-8") as file:
+    with open("feedback.json", "r+", encoding="utf-8") as file:
         datos = json.load(file)
         datos.append(respuesta_json)
         file.seek(0)

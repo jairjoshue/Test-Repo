@@ -1,0 +1,11 @@
+[
+    {
+        "nombre": "Juan Perez",
+        "documento": "20020020",
+        "fecha": "2024-03-01 14:30:00",
+        "pregunta": "Explique cómo usaría Power BI para mejorar el análisis de producción minera.",
+        "respuesta": "Usaría Power BI para integrar datos en tiempo real de sensores en la mina y generar dashboards.",
+        "evaluacion": "Correcto",
+        "puntaje": 1
+    }
+]

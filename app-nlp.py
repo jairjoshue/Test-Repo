@@ -1,6 +1,15 @@
 import streamlit as st
 import google.generativeai as genai
 import time
+
+# Cargar CSS personalizado
+def load_css():
+    with open("style.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+# Llamar la función al inicio
+load_css()
+
 # Configurar la API de Gemini
 API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
 genai.configure(api_key=API_KEY)
@@ -38,7 +47,7 @@ puestos = {
     }
 }
 
-# Inicializar estado de la aplicación
+# Estado de la aplicación
 if "entrevista_iniciada" not in st.session_state:
     st.session_state["entrevista_iniciada"] = False
 
@@ -92,22 +101,24 @@ def evaluar_respuestas_todas(respuestas_usuario):
     porcentaje_aciertos = (puntaje_total / total_preguntas) * 100
     return feedback_total, porcentaje_aciertos
 
-# Interfaz en Streamlit
-st.title("🛠️ Chatbot de Entrevistas - Minera CHINALCO")
-st.write("Simulador de entrevistas con evaluación de respuestas mediante IA.")
+# UI Mejorada
+st.image("https://www.chinalco.com.pe/wp-content/uploads/2020/08/logo-chinalco-2.png", width=200)
+st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
+st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
 
-# Ingreso de datos del postulante
+# Validación del postulante
+st.markdown("<h2>🔍 Validación de Identidad</h2>", unsafe_allow_html=True)
+
 nombre = st.text_input("Ingrese su nombre completo:")
 documento = st.text_input("Ingrese su documento de identidad:")
 
-# Validar postulante
-if st.button("Validar Postulante"):
+if st.button("🔎 Validar Postulante"):
     puesto, codigo_puesto = validar_postulante(nombre, documento)
     
     if puesto:
         st.session_state["puesto"] = puesto
         st.session_state["entrevista_iniciada"] = True
-        st.success(f"✅ Validación exitosa. Usted está postulando para: **{puesto['nombre']}**")
+        st.success(f"✅ Validación exitosa para: {nombre}")
     else:
         st.error("❌ No encontramos su información en nuestra base de datos. Para dudas, escriba a inforrhh@chinalco.com.pe")
 
@@ -117,30 +128,22 @@ if st.session_state["entrevista_iniciada"]:
     
     if iniciar:
         puesto = st.session_state["puesto"]
-        st.subheader("📋 Preguntas Generales sobre la Empresa")
+        st.markdown("<h2>📝 Preguntas Generales</h2>", unsafe_allow_html=True)
+        
+        for pregunta in preguntas_generales_empresa.keys():
+            st.markdown(f"<div class='question-box'><h3>{pregunta}</h3></div>", unsafe_allow_html=True)
+            respuesta = st.text_area(f"Responda aquí:", key=pregunta)
+            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": preguntas_generales_empresa[pregunta]}
 
-        for pregunta, respuesta_esperada in preguntas_generales_empresa.items():
-            respuesta = st.text_area(f"📝 {pregunta}", key=f"gen_{pregunta}")
-            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": respuesta_esperada}
+        st.markdown("<h2>📊 Preguntas Técnicas</h2>", unsafe_allow_html=True)
 
-        st.subheader("📊 Preguntas Técnicas del Puesto")
+        for pregunta in puesto["preguntas"].keys():
+            st.markdown(f"<div class='question-box'><h3>{pregunta}</h3></div>", unsafe_allow_html=True)
+            respuesta = st.text_area(f"Responda aquí:", key=pregunta)
+            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": puesto["preguntas"][pregunta]}
 
-        for pregunta, respuesta_esperada in puesto["preguntas"].items():
-            respuesta = st.text_area(f"📝 {pregunta}", key=f"tec_{pregunta}")
-            st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta, "esperada": respuesta_esperada}
-
-        # Botón para evaluar todas las respuestas juntas
+        # Botón para enviar todas las respuestas
         if st.button("📩 Enviar Entrevista y Obtener Feedback"):
             feedback_total, porcentaje_aciertos = evaluar_respuestas_todas(st.session_state["respuestas_usuario"])
-            st.session_state["entrevista_completada"] = True
-
             st.success(f"🎯 Puntaje final: **{porcentaje_aciertos:.2f}%**")
             st.write("📩 Sus respuestas serán enviadas a Recursos Humanos para su evaluación.")
-            
-            # Mostrar feedback detallado
-            for pregunta, datos in feedback_total.items():
-                st.write(f"**{pregunta}**")
-                st.write(f"✅ Respuesta del usuario: {datos['respuesta_usuario']}")
-                st.write(f"📊 Evaluación: {datos['evaluacion']}")
-                st.write(f"🎯 Puntaje: {datos['puntaje']}/1")
-                st.write("---")

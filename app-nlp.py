@@ -128,9 +128,9 @@ st.markdown("""
     </p>
     <p style="font-size: 10px; font-style: italic;">
     Nombre: Jairsinho Patiño
-    Documento: 10010010 || 
+    Documento: 10010010 <br> 
     Nombre: Juan Perez
-    Documento: 20020020 || 
+    Documento: 20020020  <br>
     Nombre: Pepe Guzman
     Documento: 30030030 || 
     Nombre: Manuel Burga

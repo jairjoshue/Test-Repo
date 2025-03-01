@@ -104,7 +104,11 @@ def evaluar_respuestas_todas(respuestas_usuario):
 # UI Mejorada
 # UI Mejorada con el nuevo logo
 # UI Mejorada con el nuevo logo centrado
-st.markdown('<div class="logo-container"><img src="logo-mina.png" alt="Logo Chinalco"></div>', unsafe_allow_html=True)
+# st.markdown('<div class="logo-container"><img src="logo-mina.png" alt="Logo Chinalco"></div>', unsafe_allow_html=True)
+# Centrar el logo correctamente con `st.image()`
+st.markdown('<div style="display: flex; justify-content: center;">', unsafe_allow_html=True)
+st.image("logo_mina.png", width=200)  # Asegúrate de que la imagen está en la misma carpeta
+st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("<h1>Chatbot de Entrevistas - Minera CHINALCO</h1>", unsafe_allow_html=True)
 st.write("<p style='text-align: center;'>Simulador de entrevistas con IA</p>", unsafe_allow_html=True)
 

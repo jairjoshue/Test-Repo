@@ -127,7 +127,7 @@ st.markdown("""
     <p style="font-size: 8px; font-style: italic;">
     Puedes usar los siguientes datos para probar la validación de postulantes:
     </p>
-    <pre style="font-size: 8px; font-style: italic;">
+    <p style="font-size: 8px; font-style: italic;">
     Nombre: Jairsinho Patiño
     Documento: 10010010
 
@@ -145,7 +145,7 @@ st.markdown("""
 
     Nombre: Jose Machicao
     Documento: 60060060
-    </pre>
+    </p>
     """, unsafe_allow_html=True)
 
 # 🔹 Validación del postulante

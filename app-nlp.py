@@ -2,21 +2,34 @@ import streamlit as st
 import json
 import random
 import datetime
-from google.generativeai import configure, generate_text
+import google.generativeai as genai
 
 # Configurar API de Gemini
-configure(api_key="AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM")
+try:
+    genai.configure(api_key="AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM")
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    GEMINI_AVAILABLE = True
+except Exception as e:
+    GEMINI_AVAILABLE = False
+    print("Error al configurar Gemini:", e)
 
 def procesar_lote_gemini(consultas):
-    respuestas = generate_text("\n".join(consultas))
-    return respuestas.text.split("\n") if respuestas else ["Error"] * len(consultas)
+    if GEMINI_AVAILABLE:
+        try:
+            response = model.generate_content("\n".join(consultas))
+            return response.text.split("\n") if response and response.text else ["Error"] * len(consultas)
+        except Exception as e:
+            print("Error en Gemini:", e)
+            return ["Error en procesamiento de IA"] * len(consultas)
+    else:
+        return ["Gemini no disponible"] * len(consultas)
 
 # Cargar datos desde archivos JSON
-with open("postulantes.json", "r") as f:
+with open("/mnt/data/postulantes.json", "r") as f:
     postulantes = json.load(f)
-with open("puestos.json", "r") as f:
+with open("/mnt/data/puestos.json", "r") as f:
     puestos = json.load(f)
-with open("preguntas_generales.json", "r") as f:
+with open("/mnt/data/preguntas_generales.json", "r") as f:
     preguntas_generales = json.load(f)
 
 # Inicializar historial de chat
@@ -112,7 +125,7 @@ if st.session_state.postulante and st.session_state.preguntas:
             "respuestas": st.session_state.respuestas,
             "id_entrevista": num_entrevista
         }
-        with open(f"entrevista_{num_entrevista}.json", "w") as f:
+        with open(f"/mnt/data/entrevista_{num_entrevista}.json", "w") as f:
             json.dump(reporte, f)
         mostrar_mensaje("assistant", f"Gracias por completar la entrevista. Tu número de entrevista es {num_entrevista}. RRHH se comunicará contigo.")
         st.session_state.clear()

@@ -26,11 +26,11 @@ def consultar_gemini_lote(consultas):
         return ["Gemini no disponible"] * len(consultas)
 
 # Cargar datos desde archivos JSON
-with open("/mnt/data/postulantes.json", "r") as f:
+with open("postulantes.json", "r") as f:
     postulantes = json.load(f)
-with open("/mnt/data/puestos.json", "r") as f:
+with open("puestos.json", "r") as f:
     puestos = json.load(f)
-with open("/mnt/data/preguntas_generales.json", "r") as f:
+with open("preguntas_generales.json", "r") as f:
     preguntas_generales = json.load(f)
 
 # Inicializar historial de chat
@@ -122,7 +122,7 @@ if st.session_state.postulante and st.session_state.acepto_terminos and st.sessi
             "id_entrevista": num_entrevista
         }
         
-        with open(f"/mnt/data/entrevista_{num_entrevista}.json", "w") as f:
+        with open(f"entrevista_{num_entrevista}.json", "w") as f:
             json.dump(reporte, f)
         
         mostrar_mensaje("assistant", f"Gracias por completar la entrevista. Tu número de entrevista es {num_entrevista}.\n\n**Feedback:** {feedback_general}\n\n**Calificación final:** {promedio_calificacion}")

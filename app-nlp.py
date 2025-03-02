@@ -47,6 +47,8 @@ def init_session():
         st.session_state.respuestas = {}
     if "acepto_terminos" not in st.session_state:
         st.session_state.acepto_terminos = False
+    if "pregunta_actual" not in st.session_state:
+        st.session_state.pregunta_actual = None
 
 init_session()
 
@@ -83,34 +85,36 @@ if st.session_state.postulante and not st.session_state.acepto_terminos:
         st.session_state.acepto_terminos = True
 
 # Preguntas generales antes de las específicas
-if st.session_state.acepto_terminos and st.session_state.preguntas_generales:
-    pregunta_actual = st.session_state.preguntas_generales.pop(0)
-    mostrar_mensaje("assistant", f"{pregunta_actual}")
+if st.session_state.acepto_terminos and st.session_state.preguntas_generales and st.session_state.pregunta_actual is None:
+    st.session_state.pregunta_actual = st.session_state.preguntas_generales.pop(0)
+    mostrar_mensaje("assistant", st.session_state.pregunta_actual)
+
+if st.session_state.acepto_terminos and st.session_state.pregunta_actual:
     respuesta_usuario = st.chat_input("Tu respuesta")
     if respuesta_usuario:
         mostrar_mensaje("user", respuesta_usuario)
-        st.session_state.respuestas[pregunta_actual] = {"respuesta": respuesta_usuario}
-        if st.session_state.preguntas_generales:
-            mostrar_mensaje("assistant", "Pasemos a la siguiente pregunta...")
+        st.session_state.respuestas[st.session_state.pregunta_actual] = {"respuesta": respuesta_usuario}
+        st.session_state.pregunta_actual = None
         st.rerun()
 
 # Iniciar preguntas específicas solo cuando terminen las generales
 if st.session_state.acepto_terminos and not st.session_state.preguntas_generales and not st.session_state.preguntas:
     st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
 
-if st.session_state.acepto_terminos and st.session_state.preguntas:
-    pregunta_actual = st.session_state.preguntas.pop(0)
-    mostrar_mensaje("assistant", f"{pregunta_actual}")
+if st.session_state.acepto_terminos and st.session_state.preguntas and st.session_state.pregunta_actual is None:
+    st.session_state.pregunta_actual = st.session_state.preguntas.pop(0)
+    mostrar_mensaje("assistant", st.session_state.pregunta_actual)
+
+if st.session_state.acepto_terminos and st.session_state.pregunta_actual:
     respuesta_usuario = st.chat_input("Tu respuesta")
     if respuesta_usuario:
         mostrar_mensaje("user", respuesta_usuario)
-        st.session_state.respuestas[pregunta_actual] = {"respuesta": respuesta_usuario}
-        if st.session_state.preguntas:
-            mostrar_mensaje("assistant", "Pasemos a la siguiente pregunta...")
+        st.session_state.respuestas[st.session_state.pregunta_actual] = {"respuesta": respuesta_usuario}
+        st.session_state.pregunta_actual = None
         st.rerun()
 
-# Finalización y análisis (ahora solo se ejecuta cuando no quedan preguntas pendientes)
-if st.session_state.acepto_terminos and not st.session_state.preguntas and not st.session_state.preguntas_generales:
+# Finalización y análisis (solo cuando no quedan preguntas pendientes)
+if st.session_state.acepto_terminos and not st.session_state.preguntas and not st.session_state.preguntas_generales and st.session_state.pregunta_actual is None:
     num_entrevista = random.randint(100000, 999999)
     fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     consultas_eval = [

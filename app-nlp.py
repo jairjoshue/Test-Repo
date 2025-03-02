@@ -4,7 +4,7 @@ import random
 import datetime
 import pandas as pd
 import google.generativeai as genai
-
+import re
 # Configurar API de Gemini
 try:
     genai.configure(api_key="AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM")
@@ -36,6 +36,9 @@ def consultar_gemini(pregunta, respuesta_usuario, respuesta_esperada):
 def generar_informe(postulante, respuestas):
     """
     Genera un informe estructurado con el puntaje obtenido y el feedback resumido.
+    Retorna:
+    - informe (str): El informe estructurado con la evaluación.
+    - puntajes (list): Lista de puntajes individuales obtenidos por el postulante.
     """
     puntajes = []
     feedbacks = []
@@ -45,8 +48,8 @@ def generar_informe(postulante, respuestas):
         puntaje = extraer_puntaje(resultado)
         puntajes.append(puntaje)
 
-        # Reducir feedback a una estructura clara
-        explicacion_resumida = resultado.split("\n")[0]  # Toma solo la primera línea como resumen
+        # Reducir feedback a un resumen claro
+        explicacion_resumida = resultado.split("\n")[0]  # Tomar solo la primera línea como resumen
 
         feedbacks.append(f"✅ **{r['pregunta']}**\n"
                          f"- **Puntaje:** {puntaje} ⭐\n"
@@ -54,7 +57,7 @@ def generar_informe(postulante, respuestas):
 
     # Cálculo de puntaje final
     puntaje_total = sum(puntajes)
-    puntaje_maximo = len(respuestas)
+    puntaje_maximo = len(respuestas) if respuestas else 1  # Evitar división entre 0
     promedio = round((puntaje_total / puntaje_maximo) * 100, 2)  # Convertir a porcentaje
 
     # Generación del informe final
@@ -71,9 +74,8 @@ def generar_informe(postulante, respuestas):
     **🎯 Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)
     """
     
-    return informe
+    return informe, puntajes  # Retornar informe y lista de puntajes
 
-import re
 
 def extraer_puntaje(resultado):
     """

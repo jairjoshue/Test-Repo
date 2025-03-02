@@ -41,6 +41,8 @@ def init_session():
         st.session_state.postulante = None
     if "preguntas" not in st.session_state:
         st.session_state.preguntas = []
+    if "preguntas_generales" not in st.session_state:
+        st.session_state.preguntas_generales = preguntas_generales[:]
     if "respuestas" not in st.session_state:
         st.session_state.respuestas = {}
     if "acepto_terminos" not in st.session_state:
@@ -79,51 +81,55 @@ if st.session_state.postulante and not st.session_state.acepto_terminos:
     if st.button("Acepto los términos"):
         mostrar_mensaje("user", "Acepto los términos")
         st.session_state.acepto_terminos = True
-        st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
-        st.session_state.pregunta_actual = 0
 
-# Proceso de preguntas
-if st.session_state.postulante and st.session_state.acepto_terminos and st.session_state.preguntas:
-    if st.session_state.pregunta_actual < len(st.session_state.preguntas):
-        pregunta_actual = st.session_state.preguntas[st.session_state.pregunta_actual]
-        mostrar_mensaje("assistant", f"{pregunta_actual}")
-        respuesta_usuario = st.chat_input("Tu respuesta")
-        if respuesta_usuario:
-            mostrar_mensaje("user", respuesta_usuario)
-            st.session_state.respuestas[pregunta_actual] = {"respuesta": respuesta_usuario}
-            st.session_state.pregunta_actual += 1
-            st.rerun()
-    else:
-        num_entrevista = random.randint(100000, 999999)
-        fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Evaluación en lote
-        consultas_eval = []
-        for pregunta, datos in st.session_state.respuestas.items():
-            respuesta_usuario = datos["respuesta"]
-            respuesta_esperada = puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"][pregunta]
-            consultas_eval.append(f"Compara la respuesta con la esperada y da un puntaje de 0 a 100:\n\nPregunta: {pregunta}\nRespuesta usuario: {respuesta_usuario}\nRespuesta esperada: {respuesta_esperada}")
-        
-        resultados_eval = consultar_gemini_lote(consultas_eval)
-        
-        for i, pregunta in enumerate(st.session_state.respuestas.keys()):
-            st.session_state.respuestas[pregunta]["evaluacion"] = resultados_eval[i]
-        
-        feedback_general = consultar_gemini_lote(["Genera un feedback general sobre la entrevista basándote en las respuestas del postulante."])[0]
-        promedio_calificacion = consultar_gemini_lote(["Calcula un puntaje promedio basado en la evaluación de respuestas del postulante."])[0]
-        
-        reporte = {
-            "postulante": st.session_state.postulante,
-            "puesto": puestos[st.session_state.postulante["codigo_puesto"]],
-            "fecha": fecha,
-            "respuestas": st.session_state.respuestas,
-            "feedback": feedback_general,
-            "calificacion": promedio_calificacion,
-            "id_entrevista": num_entrevista
-        }
-        
-        with open(f"entrevista_{num_entrevista}.json", "w") as f:
-            json.dump(reporte, f)
-        
-        mostrar_mensaje("assistant", f"Gracias por completar la entrevista. Tu número de entrevista es {num_entrevista}.\n\n**Feedback:** {feedback_general}\n\n**Calificación final:** {promedio_calificacion}")
-        st.session_state.clear()
+# Preguntas generales antes de las específicas
+if st.session_state.acepto_terminos and st.session_state.preguntas_generales:
+    pregunta_actual = st.session_state.preguntas_generales.pop(0)
+    mostrar_mensaje("assistant", f"{pregunta_actual}")
+    respuesta_usuario = st.chat_input("Tu respuesta")
+    if respuesta_usuario:
+        mostrar_mensaje("user", respuesta_usuario)
+        st.session_state.respuestas[pregunta_actual] = {"respuesta": respuesta_usuario}
+        st.rerun()
+
+# Proceso de preguntas específicas del puesto
+if st.session_state.acepto_terminos and not st.session_state.preguntas_generales and not st.session_state.preguntas:
+    st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
+
+if st.session_state.acepto_terminos and st.session_state.preguntas:
+    pregunta_actual = st.session_state.preguntas.pop(0)
+    mostrar_mensaje("assistant", f"{pregunta_actual}")
+    respuesta_usuario = st.chat_input("Tu respuesta")
+    if respuesta_usuario:
+        mostrar_mensaje("user", respuesta_usuario)
+        st.session_state.respuestas[pregunta_actual] = {"respuesta": respuesta_usuario}
+        if st.session_state.preguntas:
+            mostrar_mensaje("assistant", "Pasemos a la siguiente pregunta...")
+        st.rerun()
+
+# Finalización y análisis
+if st.session_state.acepto_terminos and not st.session_state.preguntas:
+    num_entrevista = random.randint(100000, 999999)
+    fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    consultas_eval = [
+        f"Pregunta: {p}\nRespuesta usuario: {r['respuesta']}\nRespuesta esperada: {puestos[st.session_state.postulante['codigo_puesto']]['preguntas'].get(p, '')}" 
+        for p, r in st.session_state.respuestas.items()
+    ]
+    resultados_eval = consultar_gemini_lote(consultas_eval)
+    for i, pregunta in enumerate(st.session_state.respuestas.keys()):
+        st.session_state.respuestas[pregunta]["evaluacion"] = resultados_eval[i]
+    feedback_general = consultar_gemini_lote(["Genera un feedback general sobre la entrevista."])[0]
+    promedio_calificacion = consultar_gemini_lote(["Calcula un puntaje promedio."])[0]
+    reporte = {
+        "postulante": st.session_state.postulante,
+        "puesto": puestos[st.session_state.postulante["codigo_puesto"]],
+        "fecha": fecha,
+        "respuestas": st.session_state.respuestas,
+        "feedback": feedback_general,
+        "calificacion": promedio_calificacion,
+        "id_entrevista": num_entrevista
+    }
+    with open(f"entrevista_{num_entrevista}.json", "w") as f:
+        json.dump(reporte, f)
+    mostrar_mensaje("assistant", f"Gracias por completar la entrevista. **Feedback:** {feedback_general}\n**Calificación final:** {promedio_calificacion}")
+    st.session_state.clear()

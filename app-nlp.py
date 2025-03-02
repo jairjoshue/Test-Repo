@@ -288,7 +288,7 @@ if st.session_state.fase == "evaluacion":
         promedio_puntaje = 0
 
     # Mostrar conclusión basada en puntaje final
-    if promedio_puntaje >= 0.7:
+    if promedio_puntaje >= 0.5:
         mostrar_mensaje("assistant", "✅ **El postulante ha demostrado un buen nivel de conocimientos.**")
     else:
         mostrar_mensaje("assistant", "⚠️ **El postulante necesita reforzar sus conocimientos antes de continuar con el proceso.**")

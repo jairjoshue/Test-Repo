@@ -81,7 +81,6 @@ if st.session_state.postulante and not st.session_state.acepto_terminos:
         st.session_state.acepto_terminos = True
         st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
         st.session_state.pregunta_actual = 0
-        st.rerun()
 
 # Proceso de preguntas
 if st.session_state.postulante and st.session_state.acepto_terminos and st.session_state.preguntas:

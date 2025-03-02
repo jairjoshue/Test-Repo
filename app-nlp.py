@@ -32,6 +32,26 @@ def consultar_gemini(pregunta, respuesta_usuario, respuesta_esperada):
             return "Error en procesamiento"
     else:
         return "Gemini no disponible"
+        
+# Función para generar una repregunta con Gemini
+def generar_repregunta(pregunta, respuesta_usuario):
+    """
+    Genera una repregunta basada en la respuesta del usuario para clarificar o expandir su respuesta.
+    """
+    if GEMINI_AVAILABLE:
+        consulta = (
+            f"Pregunta inicial: {pregunta}\n"
+            f"Respuesta dada por el usuario: {respuesta_usuario}\n"
+            f"Genera una repregunta breve para clarificar o ampliar la respuesta del usuario."
+        )
+        try:
+            response = model.generate_content(consulta)
+            return response.text.strip() if response and response.text else "Por favor, amplía tu respuesta con más detalles."
+        except Exception as e:
+            print("Error en Gemini:", e)
+            return "Error al generar repregunta."
+    else:
+        return "No se pudo generar una repregunta en este momento."
 
 def generar_informe(postulante, respuestas):
     """
@@ -180,23 +200,64 @@ if st.session_state.fase == "preguntas" and st.session_state.df_preguntas.empty:
     st.rerun()
 
 # Navegación por preguntas sin repeticiones
+#if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
+#    pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["pregunta"]
+#    if "pregunta_mostrada" not in st.session_state or st.session_state.pregunta_mostrada != pregunta_actual:
+#        mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
+#        st.session_state.pregunta_mostrada = pregunta_actual
+#    respuesta_usuario = st.chat_input("Tu respuesta")
+#    if respuesta_usuario:
+#        mostrar_mensaje("user", respuesta_usuario)
+#        st.session_state.respuestas.append({
+#            "pregunta": pregunta_actual,
+#            "respuesta_usuario": respuesta_usuario,
+#            "respuesta_esperada": st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["respuesta_esperada"]
+#        })
+#        st.session_state.indice_pregunta += 1
+#        if st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
+#            st.session_state.fase = "evaluacion"
+#        st.rerun()
+
+# Navegación por preguntas con repregunta de Gemini
 if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
     pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["pregunta"]
+
+    # Si es la primera vez que se muestra la pregunta, la guardamos
     if "pregunta_mostrada" not in st.session_state or st.session_state.pregunta_mostrada != pregunta_actual:
         mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
         st.session_state.pregunta_mostrada = pregunta_actual
-    respuesta_usuario = st.chat_input("Tu respuesta")
-    if respuesta_usuario:
-        mostrar_mensaje("user", respuesta_usuario)
-        st.session_state.respuestas.append({
-            "pregunta": pregunta_actual,
-            "respuesta_usuario": respuesta_usuario,
-            "respuesta_esperada": st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["respuesta_esperada"]
-        })
-        st.session_state.indice_pregunta += 1
-        if st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
-            st.session_state.fase = "evaluacion"
-        st.rerun()
+        st.session_state.respuesta_parcial = None  # Inicializamos la respuesta parcial
+
+    # Si aún no se ha respondido la primera vez
+    if st.session_state.respuesta_parcial is None:
+        respuesta_usuario = st.chat_input("Tu respuesta (máx. 50 palabras)")
+        if respuesta_usuario:
+            mostrar_mensaje("user", respuesta_usuario)
+            st.session_state.respuesta_parcial = respuesta_usuario  # Guardamos la primera respuesta
+            repregunta = generar_repregunta(pregunta_actual, respuesta_usuario)
+            mostrar_mensaje("assistant", f"🤔 {repregunta}")  # Mostramos la repregunta
+            st.rerun()
+    else:
+        # Obtener respuesta a la repregunta
+        respuesta_repregunta = st.chat_input("Respuesta a la repregunta (máx. 50 palabras)")
+        if respuesta_repregunta:
+            mostrar_mensaje("user", respuesta_repregunta)
+            
+            # Concatenamos ambas respuestas para tener una única respuesta final
+            respuesta_final = f"{st.session_state.respuesta_parcial} {respuesta_repregunta}"
+            st.session_state.respuestas.append({
+                "pregunta": pregunta_actual,
+                "respuesta_usuario": respuesta_final,
+                "respuesta_esperada": st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["respuesta_esperada"]
+            })
+            
+            # Pasar a la siguiente pregunta
+            st.session_state.indice_pregunta += 1
+            st.session_state.respuesta_parcial = None  # Reiniciar la variable para la siguiente pregunta
+            
+            if st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
+                st.session_state.fase = "evaluacion"
+            st.rerun()
 
 # Evaluación de preguntas de forma individual
 #if st.session_state.fase == "evaluacion":

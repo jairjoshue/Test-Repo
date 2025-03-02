@@ -75,6 +75,11 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Mostrar mensaje de bienvenida con lista de documentos de prueba
+documentos_prueba = "\n".join([f"- {p['documento']} ({p['nombre']})" for p in postulantes])
+mostrar_mensaje("assistant", "Este chatbot esta en la etapa de prueba de validación. Puedes utilizar los siguientes documentos para probar el sistema:\n\n *" + documentos_prueba + "*")
+
+
 # Validación del postulante
 if st.session_state.fase == "inicio":
     mostrar_mensaje("assistant", "Bienvenido a la entrevista de Minera CHINALCO. Esta entrevista es confidencial y sus datos serán tratados con estricta privacidad. Ingresa tu número de documento para validar tu registro.")

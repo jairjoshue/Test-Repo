@@ -2,3 +2,4 @@ streamlit
 matplotlib
 numpy
 google-generativeai
+google-generativeai

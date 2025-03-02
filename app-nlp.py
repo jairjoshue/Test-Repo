@@ -85,12 +85,18 @@ def generar_informe(postulante, respuestas):
 
     # Generación del informe final
     informe = f"""
-    **📌 Informe de Evaluación**\n\n
-    **Nombre:** {postulante['nombre']}\n\n
-    **Documento:** {postulante['documento']}\n\n
-    **Puesto:** {postulante['codigo_puesto']}\n\n
-    **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}\n\n
+    **📌 Informe de Evaluación**
+    
+    **Nombre:** {postulante['nombre']}
+    
+    **Documento:** {postulante['documento']}
+    
+    **Puesto:** {postulante['codigo_puesto']}
+    
+    **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}
+    
     **Resultados**
+    
     {'\n\n'.join(feedbacks)}
 
     **🎯 Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)

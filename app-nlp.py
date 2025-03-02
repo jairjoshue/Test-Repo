@@ -14,17 +14,24 @@ except Exception as e:
     GEMINI_AVAILABLE = False
     print("Error al configurar Gemini:", e)
 
-# Función para consultar a Gemini en lote
-def consultar_gemini_lote(consultas):
+# Función para consultar a Gemini por pregunta
+def consultar_gemini(pregunta, respuesta_usuario, respuesta_esperada):
     if GEMINI_AVAILABLE:
+        consulta = (
+            f"Pregunta: {pregunta}\n"
+            f"Respuesta usuario: {respuesta_usuario}\n"
+            f"Respuesta esperada: {respuesta_esperada}\n"
+            f"Evalúa la respuesta con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien."
+            f"Explica brevemente por qué y analiza el sentimiento de la respuesta."
+        )
         try:
-            response = model.generate_content("\n".join(consultas))
-            return response.text.split("\n") if response and response.text else ["Error"] * len(consultas)
+            response = model.generate_content(consulta)
+            return response.text if response and response.text else "Error en evaluación"
         except Exception as e:
             print("Error en Gemini:", e)
-            return ["Error en procesamiento"] * len(consultas)
+            return "Error en procesamiento"
     else:
-        return ["Gemini no disponible"] * len(consultas)
+        return "Gemini no disponible"
 
 # Función para mostrar mensajes en el chat
 def mostrar_mensaje(rol, mensaje):
@@ -122,21 +129,13 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
             st.session_state.fase = "evaluacion"
         st.rerun()
 
-
-# Evaluación con puntajes específicos
-# Evaluación con puntajes específicos en lote
+# Evaluación de preguntas de forma individual
 if st.session_state.fase == "evaluacion":
-    consultas_eval = [
-        f"Pregunta: {r['pregunta']}\nRespuesta usuario: {r['respuesta_usuario']}\nRespuesta esperada: {r['respuesta_esperada']}\nEvalúa la respuesta con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien. Explica brevemente por qué."
-        for r in st.session_state.respuestas
-    ]
-    resultados_eval = consultar_gemini_lote(consultas_eval)  # Enviar todas las preguntas en un solo lote
-    
     puntajes = []
     feedback = []
-    for i, r in enumerate(st.session_state.respuestas):
-        resultado = resultados_eval[i].strip() if i < len(resultados_eval) else "0 Error en evaluación"
-        puntaje = 0  # Valor por defecto
+    for r in st.session_state.respuestas:
+        resultado = consultar_gemini(r['pregunta'], r['respuesta_usuario'], r['respuesta_esperada']).strip()
+        puntaje = 0
         try:
             puntaje = float(resultado.split()[0]) if resultado[0].isdigit() else 0
         except ValueError:
@@ -147,4 +146,5 @@ if st.session_state.fase == "evaluacion":
     
     total_puntaje = sum(puntajes)
     mostrar_mensaje("assistant", "\n\n".join(feedback) + f"\n\n🎯 **Puntaje final: {total_puntaje}/{len(puntajes)}**")
+    st.session_state.clear()
     st.session_state.clear()

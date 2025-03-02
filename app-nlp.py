@@ -105,7 +105,7 @@ if st.session_state.acepto_terminos and not st.session_state.proceso_finalizado:
             st.rerun()
 
 # Finalización y análisis tras responder todas las preguntas
-if st.session_state.acepto_terminos and not st.session_state.preguntas and not st.session_state.preguntas_generales and st.session_state.pregunta_actual is None:
+if st.session_state.proceso_finalizado:
     num_entrevista = random.randint(100000, 999999)
     fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     consultas_eval = [
@@ -126,7 +126,7 @@ if st.session_state.acepto_terminos and not st.session_state.preguntas and not s
         "calificacion": promedio_calificacion,
         "id_entrevista": num_entrevista
     }
-    with open(f"entrevista_{num_entrevista}.json", "w") as f:
+    with open(f"/mnt/data/entrevista_{num_entrevista}.json", "w") as f:
         json.dump(reporte, f)
     mostrar_mensaje("assistant", f"Gracias por completar la entrevista. **Feedback:** {feedback_general}\n**Calificación final:** {promedio_calificacion}")
     st.session_state.clear()

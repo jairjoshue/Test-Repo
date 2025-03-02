@@ -85,27 +85,24 @@ if st.session_state.postulante and not st.session_state.acepto_terminos:
         st.session_state.acepto_terminos = True
 
 # Manejo de preguntas generales y específicas
-if st.session_state.acepto_terminos and st.session_state.pregunta_actual is None:
-    if st.session_state.preguntas_generales:
-        st.session_state.pregunta_actual = st.session_state.preguntas_generales.pop(0)
-        mostrar_mensaje("assistant", st.session_state.pregunta_actual)
-    elif not st.session_state.preguntas and not st.session_state.preguntas_generales:
-        st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
-        if st.session_state.preguntas:
-            st.session_state.pregunta_actual = st.session_state.preguntas.pop(0)
+if st.session_state.acepto_terminos and not st.session_state.proceso_finalizado:
+    if st.session_state.pregunta_actual is None:
+        if st.session_state.preguntas_generales:
+            st.session_state.pregunta_actual = st.session_state.preguntas_generales.pop(0)
             mostrar_mensaje("assistant", st.session_state.pregunta_actual)
-
-if st.session_state.acepto_terminos and st.session_state.pregunta_actual:
-    respuesta_usuario = st.chat_input("Tu respuesta")
-    if respuesta_usuario:
-        mostrar_mensaje("user", respuesta_usuario)
-        st.session_state.respuestas[st.session_state.pregunta_actual] = {"respuesta": respuesta_usuario}
-        if st.session_state.preguntas:
+        elif st.session_state.preguntas:
             st.session_state.pregunta_actual = st.session_state.preguntas.pop(0)
             mostrar_mensaje("assistant", st.session_state.pregunta_actual)
         else:
+            st.session_state.proceso_finalizado = True
+
+    if st.session_state.pregunta_actual:
+        respuesta_usuario = st.chat_input("Tu respuesta")
+        if respuesta_usuario:
+            mostrar_mensaje("user", respuesta_usuario)
+            st.session_state.respuestas[st.session_state.pregunta_actual] = {"respuesta": respuesta_usuario}
             st.session_state.pregunta_actual = None
-        st.rerun()
+            st.rerun()
 
 # Finalización y análisis tras responder todas las preguntas
 if st.session_state.acepto_terminos and not st.session_state.preguntas and not st.session_state.preguntas_generales and st.session_state.pregunta_actual is None:

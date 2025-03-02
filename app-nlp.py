@@ -129,6 +129,7 @@ def generar_informe(postulante, respuestas):
 📌 **Puesto:** {limpiar_texto(postulante['codigo_puesto'])}  
 📅 **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}  
 ➖➖➖➖➖➖➖ 
+
 📝 **Resultados**  
 {''.join(feedbacks)}
 

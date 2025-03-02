@@ -88,12 +88,13 @@ def generar_informe(postulante, respuestas):
         analisis_sentimiento = lineas[4] #next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
 
         feedbacks.append(f"""
-        ✅ **{r['pregunta']}**  
-        - 📝 **Respuesta del Postulante:** {r['respuesta_usuario']}  
-        - ⭐ **Puntaje:** {puntaje}  
-        - 📌 **Explicación:** {explicacion_resumida}  
-        - 💬 **Análisis de Sentimiento:** {analisis_sentimiento}  
-        """)
+✅ **{r['pregunta']}**  
+🔹 **Respuesta del Postulante:** *{r['respuesta_usuario']}*  
+⭐ **Puntaje:** {puntaje}  
+📌 **Explicación:** {explicacion_resumida}  
+💬 **Análisis de Sentimiento:** {analisis_sentimiento}  
+---
+""")
 
     # Cálculo de puntaje final
     puntaje_total = sum(puntajes)
@@ -110,19 +111,18 @@ def generar_informe(postulante, respuestas):
 
     # Generación del informe final con formato mejorado
     informe = f"""
-    ### 📌 Informe de Evaluación  
-    **👤 Nombre:** {postulante['nombre']}  
-    **📄 Documento:** {postulante['documento']}  
-    **📌 Puesto:** {postulante['codigo_puesto']}  
-    **📅 Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}  
+📌 **Informe de Evaluación**  
+👤 **Nombre:** {postulante['nombre']}  
+📄 **Documento:** {postulante['documento']}  
+📌 **Puesto:** {postulante['codigo_puesto']}  
+📅 **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}  
 
-    ### 📊 **Resultados**  
-    {'\n\n'.join(feedbacks)}
+📊 **Resultados**  
+{''.join(feedbacks)}
 
-    ---
-    **🎯 Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)  
-    {conclusion}
-    """
+🎯 **Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)  
+{conclusion}
+"""
 
     return informe, puntajes
 

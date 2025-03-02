@@ -95,15 +95,17 @@ if st.session_state.fase == "esperando_terminos":
 
 # Navegación por preguntas
 if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
-    pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]
-    mostrar_mensaje("assistant", pregunta_actual["pregunta"])
+    pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["pregunta"]
+    if "pregunta_mostrada" not in st.session_state or st.session_state.pregunta_mostrada != pregunta_actual:
+        mostrar_mensaje("assistant", pregunta_actual)
+        st.session_state.pregunta_mostrada = pregunta_actual
     respuesta_usuario = st.chat_input("Tu respuesta")
     if respuesta_usuario:
         mostrar_mensaje("user", respuesta_usuario)
         st.session_state.respuestas.append({
-            "pregunta": pregunta_actual["pregunta"],
+            "pregunta": pregunta_actual,
             "respuesta_usuario": respuesta_usuario,
-            "respuesta_esperada": pregunta_actual["respuesta_esperada"]
+            "respuesta_esperada": st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["respuesta_esperada"]
         })
         st.session_state.indice_pregunta += 1
         if st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
@@ -121,3 +123,4 @@ if st.session_state.fase == "evaluacion":
     promedio_calificacion = consultar_gemini_lote([f"Calcula un puntaje promedio basado en la coherencia y relevancia de las respuestas con respecto a las respuestas esperadas: {json.dumps(st.session_state.respuestas)}"])[0]
     mostrar_mensaje("assistant", f"Gracias por completar la entrevista. **Feedback:** {feedback_general}\n**Calificación final:** {promedio_calificacion}")
     st.session_state.clear()
+

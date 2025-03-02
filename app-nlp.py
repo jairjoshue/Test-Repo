@@ -41,7 +41,7 @@ def init_session():
     if "postulante" not in st.session_state:
         st.session_state.postulante = None
     if "df_preguntas" not in st.session_state:
-        st.session_state.df_preguntas = pd.DataFrame(columns=["pregunta", "respuesta_esperada"])
+        st.session_state.df_preguntas = pd.DataFrame(columns=["pregunta", "respuesta_esperada", "nueva_pregunta"])
     if "indice_pregunta" not in st.session_state:
         st.session_state.indice_pregunta = 0
     if "respuestas" not in st.session_state:
@@ -52,6 +52,19 @@ def init_session():
         st.session_state.fase = "inicio"
 
 init_session()
+
+# Generar preguntas parafraseadas con Gemini si aún no se han generado
+if st.session_state.fase == "inicio" and st.session_state.df_preguntas.empty:
+    todas_preguntas = {**preguntas_generales}
+    if st.session_state.postulante:
+        puesto_codigo = st.session_state.postulante["codigo_puesto"]
+        if puesto_codigo in puestos:
+            todas_preguntas.update(puestos[puesto_codigo]["preguntas"])
+    df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
+    consultas_parafraseo = [f"Reformula la siguiente pregunta de una manera distinta: {p}" for p in df_preguntas["pregunta"]]
+    nuevas_preguntas = consultar_gemini_lote(consultas_parafraseo)
+    df_preguntas["nueva_pregunta"] = nuevas_preguntas
+    st.session_state.df_preguntas = df_preguntas
 
 # Función para mostrar mensajes en el chat
 def mostrar_mensaje(rol, mensaje):
@@ -66,20 +79,14 @@ for message in st.session_state.messages:
 
 # Validación del postulante
 if st.session_state.fase == "inicio":
-    mostrar_mensaje("assistant", "Bienvenido a la entrevista de Minera CHINALCO. Ingresa tu número de documento para validar tu registro.")
+    mostrar_mensaje("assistant", "Bienvenido a la entrevista de Minera CHINALCO. Esta entrevista es confidencial y sus datos serán tratados con estricta privacidad. Ingresa tu número de documento para validar tu registro.")
     doc_input = st.chat_input("Ingresa tu número de documento")
     if doc_input:
         mostrar_mensaje("user", doc_input)
         postulante = next((p for p in postulantes if p["documento"] == doc_input), None)
         if postulante:
             st.session_state.postulante = postulante
-            puesto_codigo = postulante["codigo_puesto"]
-            if puesto_codigo in puestos:
-                st.session_state.df_preguntas = pd.DataFrame(
-                    list({**preguntas_generales, **puestos[puesto_codigo]["preguntas"]}.items()), 
-                    columns=["pregunta", "respuesta_esperada"]
-                )
-            mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puestos[puesto_codigo]['nombre']}**. Acepta los términos para continuar.")
+            mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puestos[postulante['codigo_puesto']]['nombre']}**. Acepta los términos para continuar.")
             st.session_state.fase = "esperando_terminos"
         else:
             mostrar_mensaje("assistant", "Tu documento no está registrado. Contacta con RRHH en infoprocesosrrhh@chinalco.com.pe.")
@@ -95,7 +102,7 @@ if st.session_state.fase == "esperando_terminos":
 
 # Navegación por preguntas
 if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
-    pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["pregunta"]
+    pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["nueva_pregunta"]
     if "pregunta_mostrada" not in st.session_state or st.session_state.pregunta_mostrada != pregunta_actual:
         mostrar_mensaje("assistant", pregunta_actual)
         st.session_state.pregunta_mostrada = pregunta_actual
@@ -119,8 +126,6 @@ if st.session_state.fase == "evaluacion":
         for r in st.session_state.respuestas
     ]
     resultados_eval = consultar_gemini_lote(consultas_eval)
-    feedback_general = consultar_gemini_lote([f"Genera un feedback general sobre la entrevista considerando estas respuestas: {json.dumps(st.session_state.respuestas)}"])[0]
-    promedio_calificacion = consultar_gemini_lote([f"Calcula un puntaje promedio basado en la coherencia y relevancia de las respuestas con respecto a las respuestas esperadas: {json.dumps(st.session_state.respuestas)}"])[0]
-    mostrar_mensaje("assistant", f"Gracias por completar la entrevista. **Feedback:** {feedback_general}\n**Calificación final:** {promedio_calificacion}")
+    feedback_detallado = [f"{r['pregunta']}\nPuntaje: {resultados_eval[i]}\nMotivo: {consultar_gemini_lote([f'Explica la calificación dada a esta respuesta: {r}'])[0]}" for i, r in enumerate(st.session_state.respuestas)]
+    mostrar_mensaje("assistant", "\n\n".join(feedback_detallado))
     st.session_state.clear()
-

@@ -5,9 +5,11 @@ import datetime
 import pandas as pd
 import google.generativeai as genai
 import re
+
+API_KEY_GEM = st.secrets["GEMINI_API_KEY"]
 # Configurar API de Gemini
 try:
-    genai.configure(api_key="AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM")
+    genai.configure(api_key=API_KEY_GEM)
     model = genai.GenerativeModel("gemini-1.5-flash")
     GEMINI_AVAILABLE = True
 except Exception as e:

@@ -221,11 +221,50 @@ if st.session_state.fase == "inicio":
 
 # Aceptación de términos
 if st.session_state.fase == "esperando_terminos":
-    if st.button("Acepto los términos"):
-        mostrar_mensaje("user", "Acepto los términos")
-        st.session_state.acepto_terminos = True
-        st.session_state.fase = "preguntas"
-        st.rerun()
+    st.markdown("### 🔹 **Por favor, acepte los términos para continuar con la entrevista.**")
+    
+    col1, col2 = st.columns([1, 1])  # Para colocar los botones en la misma línea
+
+    with col1:
+        if st.button("✅ Acepto los términos", key="aceptar"):
+            mostrar_mensaje("user", "Acepto los términos")
+            st.session_state.acepto_terminos = True
+
+            # 🔹 Agregar mensaje de instrucciones antes de iniciar las preguntas
+            mensaje_instrucciones = """
+📌 **Instrucciones Generales para la Entrevista**  
+
+✅ **Cómo responder:**  
+- Cada pregunta debe ser respondida con un mínimo de **10 palabras** y un máximo de **50 palabras**.  
+- Si no conoce la respuesta, indique que desconoce el tema y brinde una justificación breve.  
+
+✅ **Criterios de Evaluación:**  
+- **Coherencia:** La respuesta debe ser clara y lógica.  
+- **Precisión:** Debe abordar el tema sin desviarse.  
+- **Sentimiento:** Se evaluará el nivel de seguridad y confianza en la respuesta.  
+
+✅ **Flujo de la entrevista:**  
+1️⃣ Se le hará una pregunta sobre conocimientos generales o técnicos.  
+2️⃣ En caso de ser necesario, el chatbot podrá hacer una **repregunta** para clarificar su respuesta.  
+3️⃣ Al finalizar la entrevista, su desempeño será evaluado y recibirá un informe detallado.  
+
+🎯 **Recuerde que esta evaluación busca medir su conocimiento y habilidades. Responda con claridad y seguridad.**  
+"""
+            mostrar_mensaje("assistant", mensaje_instrucciones)
+
+            # Avanzar a la fase de preguntas
+            st.session_state.fase = "preguntas"
+            st.rerun()
+
+    with col2:
+        if st.button("❌ No Acepto los Términos", key="rechazar"):
+            mostrar_mensaje("user", "No acepto los términos")
+            mostrar_mensaje("assistant", "⚠️ **Has rechazado los términos. La entrevista ha sido cancelada.**")
+            
+            # Reiniciar el chatbot limpiando la sesión
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
 
 # Cargar preguntas fijas
 if st.session_state.fase == "preguntas" and st.session_state.df_preguntas.empty:

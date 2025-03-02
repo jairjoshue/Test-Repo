@@ -77,7 +77,7 @@ for message in st.session_state.messages:
 
 # Mostrar mensaje de bienvenida con lista de documentos de prueba
 documentos_prueba = "\n".join([f"- {p['documento']} ({p['nombre']})" for p in postulantes])
-mostrar_mensaje("assistant", "Este chatbot esta en la etapa de prueba de validación. Puedes utilizar los siguientes documentos para probar el sistema:\n\n *" + documentos_prueba + "*")
+mostrar_mensaje("assistant", "Este chatbot esta en la etapa de prueba de validación. Puedes utilizar los siguientes documentos para probar el sistema:\n\n" + documentos_prueba + " ")
 
 
 # Validación del postulante

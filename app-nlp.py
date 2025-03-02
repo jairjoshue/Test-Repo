@@ -94,7 +94,7 @@ if st.session_state.acepto_terminos and st.session_state.preguntas_generales:
             mostrar_mensaje("assistant", "Pasemos a la siguiente pregunta...")
         st.rerun()
 
-# Proceso de preguntas específicas del puesto
+# Iniciar preguntas específicas solo cuando terminen las generales
 if st.session_state.acepto_terminos and not st.session_state.preguntas_generales and not st.session_state.preguntas:
     st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
 
@@ -109,8 +109,8 @@ if st.session_state.acepto_terminos and st.session_state.preguntas:
             mostrar_mensaje("assistant", "Pasemos a la siguiente pregunta...")
         st.rerun()
 
-# Finalización y análisis
-if st.session_state.acepto_terminos and not st.session_state.preguntas:
+# Finalización y análisis (ahora solo se ejecuta cuando no quedan preguntas pendientes)
+if st.session_state.acepto_terminos and not st.session_state.preguntas and not st.session_state.preguntas_generales:
     num_entrevista = random.randint(100000, 999999)
     fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     consultas_eval = [

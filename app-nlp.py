@@ -75,6 +75,7 @@ def limpiar_texto(texto):
     texto = texto.replace("_", "")  # Evita texto subrayado o cursiva
     texto = texto.replace("-", "•")  # Evita guiones que puedan interpretarse como listas
     texto = texto.replace("—", "-")  # Reemplazo de guiones largos por guiones normales
+    texto = texto.replace("\n", " ")  # Reemplazar saltos de línea por espacios
     return texto.strip()
 
 def generar_informe(postulante, respuestas):
@@ -98,14 +99,14 @@ def generar_informe(postulante, respuestas):
         explicacion_resumida = limpiar_texto(lineas[2])  # Tomar solo la primera línea como explicación breve
         analisis_sentimiento = limpiar_texto(lineas[4]) #next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
 
-        feedbacks.append(f"""
+        feedbacks.append(f'''
 ✅ **{limpiar_texto(r['pregunta'])}**  
 📝 **Respuesta del Postulante:** {limpiar_texto(r['respuesta_usuario'])}  
 ⭐ **Puntaje:** {puntaje}  
 📌 **Explicación:** {explicacion_resumida}  
 💬 **Análisis de Sentimiento:** {analisis_sentimiento}  
----
-""")
+➖➖➖➖➖➖➖
+''')
 
     # Cálculo de puntaje final
     puntaje_total = sum(puntajes)
@@ -121,19 +122,19 @@ def generar_informe(postulante, respuestas):
         conclusion = "❌ **El postulante no cumple con los conocimientos requeridos.**"
 
     # Generación del informe final con formato mejorado
-    informe = f"""
+    informe = f'''
 🔍 **Informe de Evaluación**  
 👤 **Nombre:** {limpiar_texto(postulante['nombre'])}  
 📄 **Documento:** {limpiar_texto(postulante['documento'])}  
 📌 **Puesto:** {limpiar_texto(postulante['codigo_puesto'])}  
 📅 **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}  
-
+➖➖➖➖➖➖➖ 
 📝 **Resultados**  
 {''.join(feedbacks)}
 
 🎯 **Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)  
 {conclusion}
-"""
+'''
 
     return informe, puntajes
 

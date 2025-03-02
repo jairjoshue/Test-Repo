@@ -51,7 +51,7 @@ def generar_informe(postulante, respuestas):
         # Separar explicación y análisis de sentimientos
         lineas = resultado.split("\n")
         explicacion_resumida = lineas[2]  # Tomar solo la primera línea como explicación breve
-        analisis_sentimiento = lineas[3] #next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
+        analisis_sentimiento = lineas[4] #next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
 
         feedbacks.append(f"✅ **{r['pregunta']}**\n"
                          f"- **Puntaje:** {puntaje} ⭐\n"

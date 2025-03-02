@@ -26,11 +26,11 @@ def consultar_gemini_lote(consultas):
         return ["Gemini no disponible"] * len(consultas)
 
 # Cargar datos desde archivos JSON
-with open("postulantes.json", "r") as f:
+with open("/mnt/data/postulantes.json", "r") as f:
     postulantes = json.load(f)
-with open("puestos.json", "r") as f:
+with open("/mnt/data/puestos.json", "r") as f:
     puestos = json.load(f)
-with open("preguntas_generales.json", "r") as f:
+with open("/mnt/data/preguntas_generales.json", "r") as f:
     preguntas_generales = json.load(f)
 
 # Inicializar historial de chat
@@ -43,6 +43,8 @@ def init_session():
         st.session_state.preguntas = []
     if "respuestas" not in st.session_state:
         st.session_state.respuestas = {}
+    if "acepto_terminos" not in st.session_state:
+        st.session_state.acepto_terminos = False
 
 init_session()
 
@@ -68,17 +70,21 @@ if st.session_state.postulante is None:
             st.session_state.postulante = postulante
             puesto = puestos[postulante["codigo_puesto"]]
             mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puesto['nombre']}**. Acepta los términos para continuar.")
-            if st.button("Acepto los términos"):
-                mostrar_mensaje("user", "Acepto los términos")
-                st.session_state.preguntas = list(puesto["preguntas"].keys())
-                st.session_state.pregunta_actual = 0
-                st.rerun()
         else:
             mostrar_mensaje("assistant", "Tu documento no está registrado. Contacta con RRHH en infoprocesosrrhh@chinalco.com.pe.")
             st.stop()
 
+# Aceptación de términos
+if st.session_state.postulante and not st.session_state.acepto_terminos:
+    if st.button("Acepto los términos"):
+        mostrar_mensaje("user", "Acepto los términos")
+        st.session_state.acepto_terminos = True
+        st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
+        st.session_state.pregunta_actual = 0
+        st.rerun()
+
 # Proceso de preguntas
-if st.session_state.postulante and st.session_state.preguntas:
+if st.session_state.postulante and st.session_state.acepto_terminos and st.session_state.preguntas:
     if st.session_state.pregunta_actual < len(st.session_state.preguntas):
         pregunta_actual = st.session_state.preguntas[st.session_state.pregunta_actual]
         mostrar_mensaje("assistant", f"{pregunta_actual}")
@@ -117,7 +123,7 @@ if st.session_state.postulante and st.session_state.preguntas:
             "id_entrevista": num_entrevista
         }
         
-        with open(f"entrevista_{num_entrevista}.json", "w") as f:
+        with open(f"/mnt/data/entrevista_{num_entrevista}.json", "w") as f:
             json.dump(reporte, f)
         
         mostrar_mensaje("assistant", f"Gracias por completar la entrevista. Tu número de entrevista es {num_entrevista}.\n\n**Feedback:** {feedback_general}\n\n**Calificación final:** {promedio_calificacion}")

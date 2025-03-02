@@ -49,7 +49,7 @@ def init_session():
     if "postulante" not in st.session_state:
         st.session_state.postulante = None
     if "df_preguntas" not in st.session_state:
-        st.session_state.df_preguntas = pd.DataFrame(columns=["pregunta", "respuesta_esperada", "nueva_pregunta"])
+        st.session_state.df_preguntas = pd.DataFrame(columns=["pregunta", "respuesta_esperada"])
     if "indice_pregunta" not in st.session_state:
         st.session_state.indice_pregunta = 0
     if "respuestas" not in st.session_state:
@@ -58,8 +58,6 @@ def init_session():
         st.session_state.acepto_terminos = False
     if "fase" not in st.session_state:
         st.session_state.fase = "inicio"
-    if "preguntas_generadas" not in st.session_state:
-        st.session_state.preguntas_generadas = False
 
 init_session()
 
@@ -90,31 +88,22 @@ if st.session_state.fase == "esperando_terminos":
     if st.button("Acepto los términos"):
         mostrar_mensaje("user", "Acepto los términos")
         st.session_state.acepto_terminos = True
-        st.session_state.fase = "generar_preguntas"
+        st.session_state.fase = "preguntas"
         st.rerun()
 
-# Generación de preguntas reformuladas
-if st.session_state.fase == "generar_preguntas" and not st.session_state.preguntas_generadas:
+# Cargar preguntas fijas
+if st.session_state.fase == "preguntas" and st.session_state.df_preguntas.empty:
     todas_preguntas = {**preguntas_generales}
     puesto_codigo = st.session_state.postulante["codigo_puesto"]
     if puesto_codigo in puestos:
         todas_preguntas.update(puestos[puesto_codigo]["preguntas"])
-    df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
-    consultas_parafraseo = [f"Reformula la siguiente pregunta de una manera distinta: {p}" for p in df_preguntas["pregunta"]]
-    nuevas_preguntas = consultar_gemini_lote(consultas_parafraseo)
-    
-    if len(nuevas_preguntas) != len(df_preguntas):
-        nuevas_preguntas = nuevas_preguntas[:len(df_preguntas)] if len(nuevas_preguntas) > len(df_preguntas) else nuevas_preguntas + ["(Error en generación, usar original)"] * (len(df_preguntas) - len(nuevas_preguntas))
-    
-    df_preguntas["nueva_pregunta"] = nuevas_preguntas
-    st.session_state.df_preguntas = df_preguntas
-    st.session_state.preguntas_generadas = True
-    st.session_state.fase = "preguntas"
+    st.session_state.df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
+    st.session_state.indice_pregunta = 0
     st.rerun()
 
 # Navegación por preguntas
 if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
-    pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["nueva_pregunta"]
+    pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["pregunta"]
     mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
     respuesta_usuario = st.chat_input("Tu respuesta")
     if respuesta_usuario:
@@ -128,6 +117,7 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
         if st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
             st.session_state.fase = "evaluacion"
         st.rerun()
+
 
 # Finalización y análisis tras responder todas las preguntas
 if st.session_state.fase == "evaluacion":

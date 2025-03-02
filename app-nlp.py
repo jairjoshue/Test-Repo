@@ -85,25 +85,13 @@ if st.session_state.postulante and not st.session_state.acepto_terminos:
         st.session_state.acepto_terminos = True
 
 # Preguntas generales antes de las específicas
-if st.session_state.acepto_terminos and st.session_state.preguntas_generales and st.session_state.pregunta_actual is None:
-    st.session_state.pregunta_actual = st.session_state.preguntas_generales.pop(0)
-    mostrar_mensaje("assistant", st.session_state.pregunta_actual)
-
-if st.session_state.acepto_terminos and st.session_state.pregunta_actual:
-    respuesta_usuario = st.chat_input("Tu respuesta")
-    if respuesta_usuario:
-        mostrar_mensaje("user", respuesta_usuario)
-        st.session_state.respuestas[st.session_state.pregunta_actual] = {"respuesta": respuesta_usuario}
-        st.session_state.pregunta_actual = None
-        st.rerun()
-
-# Iniciar preguntas específicas solo cuando terminen las generales
-if st.session_state.acepto_terminos and not st.session_state.preguntas_generales and not st.session_state.preguntas:
-    st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
-
-if st.session_state.acepto_terminos and st.session_state.preguntas and st.session_state.pregunta_actual is None:
-    st.session_state.pregunta_actual = st.session_state.preguntas.pop(0)
-    mostrar_mensaje("assistant", st.session_state.pregunta_actual)
+if st.session_state.acepto_terminos and st.session_state.pregunta_actual is None:
+    if st.session_state.preguntas_generales:
+        st.session_state.pregunta_actual = st.session_state.preguntas_generales.pop(0)
+        mostrar_mensaje("assistant", st.session_state.pregunta_actual)
+    elif st.session_state.preguntas:
+        st.session_state.pregunta_actual = st.session_state.preguntas.pop(0)
+        mostrar_mensaje("assistant", st.session_state.pregunta_actual)
 
 if st.session_state.acepto_terminos and st.session_state.pregunta_actual:
     respuesta_usuario = st.chat_input("Tu respuesta")

@@ -1,164 +1,118 @@
 import streamlit as st
-import google.generativeai as genai
 import json
-import os
 import random
 import time
-from datetime import datetime
+from google.generativeai import configure, generate_content
 
 # Configurar la API de Gemini
 # Configurar la API de Gemini
-API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+GEMINI_API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
+configure(api_key=API_KEY)
+#model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
-# 🔹 Funciones para manejar archivos JSON
-def cargar_json(nombre_archivo):
-    with open(nombre_archivo, "r", encoding="utf-8") as archivo:
-        return json.load(archivo)
+# Cargar bases de datos
+with open("preguntas_generales.json", "r", encoding="utf-8") as f:
+    preguntas_generales = json.load(f)
 
-def guardar_json(nombre_archivo, datos):
-    with open(nombre_archivo, "w", encoding="utf-8") as archivo:
-        json.dump(datos, archivo, indent=4, ensure_ascii=False)
+with open("postulantes.json", "r", encoding="utf-8") as f:
+    postulantes = json.load(f)
 
-# 🔹 Cargar datos desde archivos JSON
-postulantes = cargar_json("postulantes.json")
-preguntas_generales = cargar_json("preguntas_generales.json")
-puestos = cargar_json("puestos.json")
+with open("puestos.json", "r", encoding="utf-8") as f:
+    puestos = json.load(f)
 
-# 🔹 Configurar estado inicial
-if "chat_history" not in st.session_state:
-    st.session_state["chat_history"] = []
-if "esperando_nombre" not in st.session_state:
-    st.session_state["esperando_nombre"] = True
-if "esperando_documento" not in st.session_state:
-    st.session_state["esperando_documento"] = False
-if "proceso_activo" not in st.session_state:
-    st.session_state["proceso_activo"] = False
-if "respuestas_usuario" not in st.session_state:
-    st.session_state["respuestas_usuario"] = {}
-if "entrevista_id" not in st.session_state:
-    st.session_state["entrevista_id"] = f"CH-{random.randint(1000,9999)}"
+# Función para verificar postulante
+def verificar_postulante(documento):
+    for p in postulantes:
+        if p["documento"] == documento:
+            return p
+    return None
 
-# 🔹 Función para agregar mensaje al chat
-def agregar_mensaje(remitente, mensaje):
-    st.session_state["chat_history"].append({"role": remitente, "message": mensaje})
-
-# 🔹 Función para parafrasear preguntas con Gemini
+# Función para parafrasear pregunta con Gemini
 def parafrasear_pregunta(pregunta):
-    prompt = f"Reescribe la siguiente pregunta de manera diferente, manteniendo el mismo significado: {pregunta}"
-    response = model.generate_content(prompt)
-    return response.text.strip()
+    prompt = f"Parafrasea la siguiente pregunta sin cambiar su significado: {pregunta}"
+    respuesta = generate_content(prompt)
+    return respuesta.text.strip()
 
-# 🔹 Evaluar respuestas con IA (verifica coherencia con la esperada)
-def evaluar_respuesta(pregunta, respuesta, respuesta_esperada):
-    prompt = f"""
-    Evalúa la respuesta del candidato comparándola con la respuesta esperada. Devuelve un puntaje (1: Correcto, 0.5: Parcialmente Correcto, 0: Incorrecto) y una breve justificación.
-    Pregunta: {pregunta}
-    Respuesta del candidato: {respuesta}
-    Respuesta esperada: {respuesta_esperada}
-    """
-    response = model.generate_content(prompt)
-    feedback = response.text.strip()
+# Función para evaluar respuesta con Gemini
+def evaluar_respuesta(pregunta, respuesta):
+    prompt = (f"Evalúa la respuesta del candidato en base a la siguiente pregunta esperada: \n"
+              f"Pregunta: {pregunta}\n"
+              f"Respuesta esperada: {preguntas_generales.get(pregunta, 'No disponible')}\n"
+              f"Respuesta del candidato: {respuesta}\n"
+              f"Devuelve un porcentaje de certeza (0-100%) basado en la relevancia de la respuesta.")
+    resultado = generate_content(prompt)
+    return resultado.text.strip()
 
-    # Extraer puntaje
-    if "1" in feedback:
-        puntaje = 1
-    elif "0.5" in feedback:
-        puntaje = 0.5
-    else:
-        puntaje = 0
+# Estado de la aplicación
+if "estado" not in st.session_state:
+    st.session_state.estado = "inicio"
+    st.session_state.intentos = 0
+    st.session_state.respuestas = []
 
-    return {"respuesta_usuario": respuesta, "evaluacion": feedback, "puntaje": puntaje}
+st.title("🎤 Entrevista Virtual - Minera CHINALCO")
 
-# 🔹 Guardar historial de entrevistas
-def guardar_historial():
-    historial = {
-        "id_entrevista": st.session_state["entrevista_id"],
-        "nombre": st.session_state["nombre"],
-        "documento": st.session_state["documento"],
-        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "respuestas": st.session_state["respuestas_usuario"]
-    }
-    historial_json = "historial.json"
+# Chatbot - Lógica de Flujo
+if st.session_state.estado == "inicio":
+    st.write("👋 ¡Bienvenido al proceso de entrevistas virtuales de CHINALCO!")
+    st.write("Para continuar, ingresa tu número de documento registrado en el sistema.")
+    documento = st.text_input("Número de documento", key="doc")
+    if st.button("Verificar"):
+        postulante = verificar_postulante(documento)
+        if postulante:
+            st.session_state.postulante = postulante
+            st.session_state.estado = "bienvenida"
+            st.experimental_rerun()
+        else:
+            st.error("❌ No encontramos tu documento en la base de datos. Contacta a RRHH: infoprocesosrrhh@chinalco.com.pe")
+
+elif st.session_state.estado == "bienvenida":
+    postulante = st.session_state.postulante
+    puesto = puestos.get(postulante["codigo_puesto"], {})
+    st.write(f"✅ Hola **{postulante['nombre']}**, bienvenido al proceso de selección para el puesto de **{puesto.get('nombre', 'No identificado')}**.")
+    st.write("Este proceso consta de preguntas específicas sobre el puesto y validaremos tus respuestas.")
     
-    if os.path.exists(historial_json):
-        with open(historial_json, "r", encoding="utf-8") as file:
-            historial_existente = json.load(file)
-    else:
-        historial_existente = []
+    if st.button("Aceptar y continuar"):
+        st.session_state.estado = "preguntas"
+        st.experimental_rerun()
 
-    historial_existente.append(historial)
-
-    with open(historial_json, "w", encoding="utf-8") as file:
-        json.dump(historial_existente, file, indent=4, ensure_ascii=False)
-
-# 🔹 UI - Chat
-st.markdown("<h1>💬 Chat de Entrevista</h1>", unsafe_allow_html=True)
-
-# 🔹 Mostrar historial del chat
-for msg in st.session_state["chat_history"]:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["message"])
-
-# 🔹 Capturar entrada del usuario
-user_input = st.text_input("Escribe tu respuesta aquí:", key="user_input")
-
-# 🔹 Procesar la entrada del usuario
-if st.button("Enviar Respuesta") or user_input:
-    if user_input:
-        agregar_mensaje("user", user_input)
-
-        # 🔹 Paso 1: Ingresar Nombre
-        if st.session_state["esperando_nombre"]:
-            st.session_state["nombre"] = user_input
-            st.session_state["esperando_nombre"] = False
-            st.session_state["esperando_documento"] = True
-            agregar_mensaje("bot", "Ahora ingresa tu documento de identidad.")
+elif st.session_state.estado == "preguntas":
+    puesto = puestos.get(st.session_state.postulante["codigo_puesto"], {})
+    preguntas = list(puesto.get("preguntas", {}).keys())
+    
+    if "pregunta_actual" not in st.session_state:
+        st.session_state.pregunta_actual = 0
+    
+    if st.session_state.pregunta_actual < len(preguntas):
+        pregunta = preguntas[st.session_state.pregunta_actual]
+        pregunta_parafraseada = parafrasear_pregunta(pregunta)
+        st.write(f"🧐 Pregunta {st.session_state.pregunta_actual + 1}: {pregunta_parafraseada}")
+        respuesta = st.text_area("Tu respuesta", key="respuesta")
         
-        # 🔹 Paso 2: Validar Documento
-        elif st.session_state["esperando_documento"]:
-            documento = user_input
-            postulante = next((p for p in postulantes if p["documento"] == documento), None)
+        if st.button("Enviar respuesta"):
+            puntuacion = evaluar_respuesta(pregunta, respuesta)
+            st.session_state.respuestas.append({
+                "pregunta_original": pregunta,
+                "pregunta_parafraseada": pregunta_parafraseada,
+                "respuesta": respuesta,
+                "puntuacion": puntuacion
+            })
+            st.session_state.pregunta_actual += 1
+            st.experimental_rerun()
+    else:
+        st.session_state.estado = "finalizar"
+        st.experimental_rerun()
 
-            if postulante:
-                st.session_state["documento"] = documento
-                st.session_state["puesto"] = puestos[postulante["codigo_puesto"]]
-                st.session_state["esperando_documento"] = False
-                st.session_state["proceso_activo"] = True
-
-                agregar_mensaje("bot", f"✅ Bienvenido {postulante['nombre']}.\n\n📌 Estás postulando al puesto **{st.session_state['puesto']['nombre']}**.")
-                agregar_mensaje("bot", "Para continuar, debes aceptar los términos de la entrevista. Escribe **'ACEPTO'** para continuar.")
-
-            else:
-                agregar_mensaje("bot", "❌ No encontramos tu documento. Contacta a RRHH en infoprocesosrrhh@chinalco.com.pe.")
-
-        # 🔹 Paso 3: Confirmar aceptación
-        elif st.session_state["proceso_activo"]:
-            if user_input.lower() in ["acepto", "si acepto"]:
-                agregar_mensaje("bot", "✅ Gracias. Iniciemos con las preguntas generales.")
-                
-                # Generar preguntas parafraseadas
-                preguntas_parafraseadas = {parafrasear_pregunta(k): v for k, v in preguntas_generales.items()}
-                st.session_state["preguntas_parafraseadas"] = preguntas_parafraseadas
-
-                # Lanzar primera pregunta
-                pregunta_actual, respuesta_esperada = random.choice(list(preguntas_parafraseadas.items()))
-                st.session_state["pregunta_actual"] = pregunta_actual
-                agregar_mensaje("bot", pregunta_actual)
-            else:
-                agregar_mensaje("bot", "❌ No aceptaste los términos. La entrevista ha sido cancelada.")
-
-        # 🔹 Procesar respuestas a preguntas
-        elif "pregunta_actual" in st.session_state:
-            pregunta_actual = st.session_state["pregunta_actual"]
-            respuesta_esperada = st.session_state["preguntas_parafraseadas"][pregunta_actual]
-
-            evaluacion = evaluar_respuesta(pregunta_actual, user_input, respuesta_esperada)
-            st.session_state["respuestas_usuario"][pregunta_actual] = evaluacion
-            guardar_historial()
-
-            agregar_mensaje("bot", "✅ Respuesta registrada. Continuemos...")
-            del st.session_state["pregunta_actual"]
-
-    st.experimental_rerun()
+elif st.session_state.estado == "finalizar":
+    id_entrevista = random.randint(10000, 99999)
+    st.write("🎉 ¡Has completado la entrevista!")
+    st.write(f"Tu entrevista ha sido registrada con el ID: **{id_entrevista}**")
+    st.write("Tu desempeño será evaluado y RRHH se pondrá en contacto contigo.")
+    
+    with open(f"reporte_{id_entrevista}.json", "w", encoding="utf-8") as f:
+        json.dump(st.session_state.respuestas, f, ensure_ascii=False, indent=4)
+    
+    if st.button("Finalizar"):
+        st.session_state.estado = "inicio"
+        st.session_state.respuestas = []
+        st.session_state.pregunta_actual = 0
+        st.experimental_rerun()

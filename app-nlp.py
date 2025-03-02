@@ -42,7 +42,7 @@ def init_session():
     if "preguntas" not in st.session_state:
         st.session_state.preguntas = []
     if "preguntas_generales" not in st.session_state:
-        st.session_state.preguntas_generales = list(preguntas_generales.keys())  # ✅ Corrección aquí
+        st.session_state.preguntas_generales = list(preguntas_generales.keys())
     if "respuestas" not in st.session_state:
         st.session_state.respuestas = {}
     if "acepto_terminos" not in st.session_state:
@@ -90,6 +90,8 @@ if st.session_state.acepto_terminos and st.session_state.preguntas_generales:
     if respuesta_usuario:
         mostrar_mensaje("user", respuesta_usuario)
         st.session_state.respuestas[pregunta_actual] = {"respuesta": respuesta_usuario}
+        if st.session_state.preguntas_generales:
+            mostrar_mensaje("assistant", "Pasemos a la siguiente pregunta...")
         st.rerun()
 
 # Proceso de preguntas específicas del puesto

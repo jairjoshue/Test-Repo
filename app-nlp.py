@@ -107,12 +107,12 @@ if st.session_state.acepto_terminos and st.session_state.pregunta_actual:
             st.session_state.pregunta_actual = None
         st.rerun()
 
-# Finalización y análisis (solo cuando no quedan preguntas pendientes)
+# Finalización y análisis tras responder todas las preguntas
 if st.session_state.acepto_terminos and not st.session_state.preguntas and not st.session_state.preguntas_generales and st.session_state.pregunta_actual is None:
     num_entrevista = random.randint(100000, 999999)
     fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     consultas_eval = [
-        f"Pregunta: {p}\nRespuesta usuario: {r['respuesta']}\nRespuesta esperada: {preguntas_generales.get(p, '')}" 
+        f"Pregunta: {p}\nRespuesta usuario: {r['respuesta']}\nRespuesta esperada: {preguntas_generales.get(p, puestos[st.session_state.postulante['codigo_puesto']]['preguntas'].get(p, ''))}" 
         for p, r in st.session_state.respuestas.items()
     ]
     resultados_eval = consultar_gemini_lote(consultas_eval)

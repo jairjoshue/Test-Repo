@@ -75,15 +75,12 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Mostrar mensaje de bienvenida con lista de documentos de prueba solo una vez
-if not st.session_state.mostro_documentos_prueba:
-    documentos_prueba = "\n".join([f"- {p['documento']} ({p['nombre']})" for p in postulantes])
-    mostrar_mensaje("assistant", "Bienvenido al proceso de entrevista. Esta es una prueba de validación. Puedes utilizar los siguientes documentos para probar el sistema:\n\n *" + documentos_prueba + "*")
-    st.session_state.mostro_documentos_prueba = True
 
 # Validación del postulante
 if st.session_state.fase == "inicio":
     mostrar_mensaje("assistant", "Bienvenido a la entrevista de Minera CHINALCO. Esta entrevista es confidencial y sus datos serán tratados con estricta privacidad. Ingresa tu número de documento para validar tu registro.")
+    documentos_prueba = "\n".join([f"- {p['documento']} ({p['nombre']})" for p in postulantes])
+    mostrar_mensaje("assistant", "Bienvenido al proceso de entrevista. Esta es una prueba de validación. Puedes utilizar los siguientes documentos para probar el sistema:\n\n *" + documentos_prueba + "*")
     doc_input = st.chat_input("Ingresa tu número de documento")
     if doc_input:
         mostrar_mensaje("user", doc_input)

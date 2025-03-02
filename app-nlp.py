@@ -34,24 +34,14 @@ with open("puestos.json", "r") as f:
 with open("preguntas_generales.json", "r") as f:
     preguntas_generales = json.load(f)
 
-# Obtener las preguntas del puesto del postulante
-puesto_codigo = None
-preguntas_especificas = {}
-if "postulante" in st.session_state and st.session_state.postulante:
-    puesto_codigo = st.session_state.postulante["codigo_puesto"]
-    if puesto_codigo in puestos and "preguntas" in puestos[puesto_codigo]:
-        preguntas_especificas = puestos[puesto_codigo]["preguntas"]
-
-# Fusionar preguntas generales y específicas en un dataframe
-todas_preguntas = {**preguntas_generales, **preguntas_especificas}
-df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
-
-# Inicializar historial de chat
+# Inicializar variables en la sesión
 def init_session():
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "postulante" not in st.session_state:
+        st.session_state.postulante = None
     if "df_preguntas" not in st.session_state:
-        st.session_state.df_preguntas = df_preguntas
+        st.session_state.df_preguntas = pd.DataFrame(columns=["pregunta", "respuesta_esperada"])
     if "indice_pregunta" not in st.session_state:
         st.session_state.indice_pregunta = 0
     if "respuestas" not in st.session_state:
@@ -59,7 +49,7 @@ def init_session():
     if "acepto_terminos" not in st.session_state:
         st.session_state.acepto_terminos = False
     if "fase" not in st.session_state:
-        st.session_state.fase = "preguntas"
+        st.session_state.fase = "inicio"
 
 init_session()
 
@@ -75,7 +65,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Validación del postulante
-if "postulante" not in st.session_state or st.session_state.postulante is None:
+if st.session_state.fase == "inicio":
     mostrar_mensaje("assistant", "Bienvenido a la entrevista de Minera CHINALCO. Ingresa tu número de documento para validar tu registro.")
     doc_input = st.chat_input("Ingresa tu número de documento")
     if doc_input:
@@ -90,18 +80,21 @@ if "postulante" not in st.session_state or st.session_state.postulante is None:
                     columns=["pregunta", "respuesta_esperada"]
                 )
             mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puestos[puesto_codigo]['nombre']}**. Acepta los términos para continuar.")
+            st.session_state.fase = "esperando_terminos"
         else:
             mostrar_mensaje("assistant", "Tu documento no está registrado. Contacta con RRHH en infoprocesosrrhh@chinalco.com.pe.")
             st.stop()
 
 # Aceptación de términos
-if st.session_state.postulante and not st.session_state.acepto_terminos:
+if st.session_state.fase == "esperando_terminos":
     if st.button("Acepto los términos"):
         mostrar_mensaje("user", "Acepto los términos")
         st.session_state.acepto_terminos = True
+        st.session_state.fase = "preguntas"
+        st.rerun()
 
 # Navegación por preguntas
-if st.session_state.acepto_terminos and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
+if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
     pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]
     mostrar_mensaje("assistant", pregunta_actual["pregunta"])
     respuesta_usuario = st.chat_input("Tu respuesta")
@@ -113,10 +106,12 @@ if st.session_state.acepto_terminos and st.session_state.indice_pregunta < len(s
             "respuesta_esperada": pregunta_actual["respuesta_esperada"]
         })
         st.session_state.indice_pregunta += 1
+        if st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
+            st.session_state.fase = "evaluacion"
         st.rerun()
 
 # Finalización y análisis tras responder todas las preguntas
-if st.session_state.acepto_terminos and st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
+if st.session_state.fase == "evaluacion":
     consultas_eval = [
         f"Pregunta: {r['pregunta']}\nRespuesta usuario: {r['respuesta_usuario']}\nRespuesta esperada: {r['respuesta_esperada']}"
         for r in st.session_state.respuestas

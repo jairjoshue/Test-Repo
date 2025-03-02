@@ -35,7 +35,7 @@ def consultar_gemini(pregunta, respuesta_usuario, respuesta_esperada):
 
 def generar_informe(postulante, respuestas):
     """
-    Genera un informe estructurado con el puntaje obtenido y el feedback resumido.
+    Genera un informe estructurado con el puntaje obtenido, feedback resumido y análisis de sentimientos.
     Retorna:
     - informe (str): El informe estructurado con la evaluación.
     - puntajes (list): Lista de puntajes individuales obtenidos por el postulante.
@@ -48,12 +48,15 @@ def generar_informe(postulante, respuestas):
         puntaje = extraer_puntaje(resultado)
         puntajes.append(puntaje)
 
-        # Reducir feedback a un resumen claro
-        explicacion_resumida = resultado.split("\n")[0]  # Tomar solo la primera línea como resumen
+        # Separar explicación y análisis de sentimientos
+        lineas = resultado.split("\n")
+        explicacion_resumida = lineas[0]  # Tomar solo la primera línea como explicación breve
+        analisis_sentimiento = next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
 
         feedbacks.append(f"✅ **{r['pregunta']}**\n"
                          f"- **Puntaje:** {puntaje} ⭐\n"
-                         f"- **Resumen:** {explicacion_resumida}")
+                         f"- **Explicación:** {explicacion_resumida}\n"
+                         f"- **Análisis de Sentimiento:** {analisis_sentimiento}")
 
     # Cálculo de puntaje final
     puntaje_total = sum(puntajes)
@@ -75,6 +78,7 @@ def generar_informe(postulante, respuestas):
     """
     
     return informe, puntajes  # Retornar informe y lista de puntajes
+
 
 
 def extraer_puntaje(resultado):

@@ -22,7 +22,7 @@ def consultar_gemini(pregunta, respuesta_usuario, respuesta_esperada):
             f"Respuesta usuario: {respuesta_usuario}\n"
             f"Respuesta esperada: {respuesta_esperada}\n"
             f"Evalúa la respuesta con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien."
-            f"Explica brevemente por qué y analiza el sentimiento de la respuesta."
+            f"Explica brevemente en menos de 20 palabras el porqué del puntaje y analiza el sentimiento de la respuesta en menos de 20 palabras."
         )
         try:
             response = model.generate_content(consulta)
@@ -32,6 +32,59 @@ def consultar_gemini(pregunta, respuesta_usuario, respuesta_esperada):
             return "Error en procesamiento"
     else:
         return "Gemini no disponible"
+
+def generar_informe(postulante, respuestas):
+    """
+    Genera un informe estructurado con el puntaje obtenido y el feedback resumido.
+    """
+    puntajes = []
+    feedbacks = []
+
+    for r in respuestas:
+        resultado = consultar_gemini(r['pregunta'], r['respuesta_usuario'], r['respuesta_esperada']).strip()
+        puntaje = extraer_puntaje(resultado)
+        puntajes.append(puntaje)
+
+        # Reducir feedback a una estructura clara
+        explicacion_resumida = resultado.split("\n")[0]  # Toma solo la primera línea como resumen
+
+        feedbacks.append(f"✅ **{r['pregunta']}**\n"
+                         f"- **Puntaje:** {puntaje} ⭐\n"
+                         f"- **Resumen:** {explicacion_resumida}")
+
+    # Cálculo de puntaje final
+    puntaje_total = sum(puntajes)
+    puntaje_maximo = len(respuestas)
+    promedio = round((puntaje_total / puntaje_maximo) * 100, 2)  # Convertir a porcentaje
+
+    # Generación del informe final
+    informe = f"""
+    **📌 Informe de Evaluación**
+    **Nombre:** {postulante['nombre']}
+    **Documento:** {postulante['documento']}
+    **Puesto:** {postulante['codigo_puesto']}
+    **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}
+
+    ### **Resultados**
+    {'\n\n'.join(feedbacks)}
+
+    **🎯 Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)
+    """
+    
+    return informe
+
+import re
+
+def extraer_puntaje(resultado):
+    """
+    Extrae el puntaje devuelto por Gemini (0, 0.5 o 1).
+    Si el resultado no tiene un número válido, se asigna 0.0.
+    """
+    match = re.search(r'(\d+(\.\d+)?)', resultado)  # Busca un número decimal o entero
+    if match:
+        return float(match.group(1))  # Convierte el primer número encontrado en float
+    return 0.0  # Si no hay número, se asigna 0.0
+
 
 # Función para mostrar mensajes en el chat
 def mostrar_mensaje(rol, mensaje):
@@ -140,21 +193,33 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
         st.rerun()
 
 # Evaluación de preguntas de forma individual
+#if st.session_state.fase == "evaluacion":
+#    puntajes = []
+#    feedback = []
+#    for r in st.session_state.respuestas:
+#        resultado = consultar_gemini(r['pregunta'], r['respuesta_usuario'], r['respuesta_esperada']).strip()
+#        puntaje = 0
+#        try:
+#            puntaje = float(resultado.split()[0]) if resultado[0].isdigit() else 0
+#        except ValueError:
+#            puntaje = 0
+#        puntajes.append(puntaje)
+#        motivo = resultado[2:].strip() if len(resultado) > 2 else "Sin evaluación"
+#        feedback.append(f"✅ {r['pregunta']}\n**Puntaje:** {puntaje} ⭐\n**Motivo:** {motivo}")
+#    
+#    total_puntaje = sum(puntajes)
+#    mostrar_mensaje("assistant", "\n\n".join(feedback) + f"\n\n🎯 **Puntaje final: {total_puntaje}/{len(puntajes)}**")
+#    st.session_state.clear()
+#    st.session_state.clear()
 if st.session_state.fase == "evaluacion":
-    puntajes = []
-    feedback = []
-    for r in st.session_state.respuestas:
-        resultado = consultar_gemini(r['pregunta'], r['respuesta_usuario'], r['respuesta_esperada']).strip()
-        puntaje = 0
-        try:
-            puntaje = float(resultado.split()[0]) if resultado[0].isdigit() else 0
-        except ValueError:
-            puntaje = 0
-        puntajes.append(puntaje)
-        motivo = resultado[2:].strip() if len(resultado) > 2 else "Sin evaluación"
-        feedback.append(f"✅ {r['pregunta']}\n**Puntaje:** {puntaje} ⭐\n**Motivo:** {motivo}")
+    informe = generar_informe(st.session_state.postulante, st.session_state.respuestas)
+    mostrar_mensaje("assistant", informe)
     
-    total_puntaje = sum(puntajes)
-    mostrar_mensaje("assistant", "\n\n".join(feedback) + f"\n\n🎯 **Puntaje final: {total_puntaje}/{len(puntajes)}**")
-    st.session_state.clear()
-    st.session_state.clear()
+    # Conclusión basada en puntaje final
+    if sum(puntajes) / len(puntajes) >= 0.7:
+        mostrar_mensaje("assistant", "✅ **El postulante ha demostrado un buen nivel de conocimientos.**")
+    else:
+        mostrar_mensaje("assistant", "⚠️ **El postulante necesita reforzar sus conocimientos antes de continuar con el proceso.**")
+
+    # No limpiar la sesión inmediatamente
+    st.stop()

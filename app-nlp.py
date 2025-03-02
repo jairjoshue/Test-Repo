@@ -33,24 +33,27 @@ with open("puestos.json", "r") as f:
 with open("preguntas_generales.json", "r") as f:
     preguntas_generales = json.load(f)
 
+# Fusionar preguntas generales y específicas en un dataframe
+preguntas_especificas = puestos[next(iter(puestos))]["preguntas"]
+todas_preguntas = {**preguntas_generales, **preguntas_especificas}
+df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
+
 # Inicializar historial de chat
 def init_session():
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "postulante" not in st.session_state:
         st.session_state.postulante = None
-    if "preguntas" not in st.session_state:
-        st.session_state.preguntas = []
-    if "preguntas_generales" not in st.session_state:
-        st.session_state.preguntas_generales = list(preguntas_generales.keys())
+    if "df_preguntas" not in st.session_state:
+        st.session_state.df_preguntas = df_preguntas
+    if "indice_pregunta" not in st.session_state:
+        st.session_state.indice_pregunta = 0
     if "respuestas" not in st.session_state:
-        st.session_state.respuestas = {}
+        st.session_state.respuestas = []
     if "acepto_terminos" not in st.session_state:
         st.session_state.acepto_terminos = False
-    if "pregunta_actual" not in st.session_state:
-        st.session_state.pregunta_actual = None
     if "fase" not in st.session_state:
-        st.session_state.fase = "preguntas_generales"
+        st.session_state.fase = "preguntas"
 
 init_session()
 
@@ -86,43 +89,34 @@ if st.session_state.postulante and not st.session_state.acepto_terminos:
         mostrar_mensaje("user", "Acepto los términos")
         st.session_state.acepto_terminos = True
 
-# Manejo de preguntas generales y específicas
-if st.session_state.acepto_terminos:
-    if st.session_state.fase == "preguntas_generales" and st.session_state.preguntas_generales:
-        st.session_state.pregunta_actual = st.session_state.preguntas_generales.pop(0)
-        mostrar_mensaje("assistant", st.session_state.pregunta_actual)
-    elif st.session_state.fase == "preguntas_generales" and not st.session_state.preguntas_generales:
-        st.session_state.preguntas = list(puestos[st.session_state.postulante["codigo_puesto"]]["preguntas"].keys())
-        st.session_state.fase = "preguntas_especificas"
-        st.rerun()
-    elif st.session_state.fase == "preguntas_especificas" and st.session_state.preguntas:
-        st.session_state.pregunta_actual = st.session_state.preguntas.pop(0)
-        mostrar_mensaje("assistant", st.session_state.pregunta_actual)
-    elif st.session_state.fase == "preguntas_especificas" and not st.session_state.preguntas:
-        st.session_state.fase = "finalizado"
-        st.rerun()
-
-if st.session_state.pregunta_actual:
+# Navegación por preguntas
+if st.session_state.acepto_terminos and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
+    pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]
+    mostrar_mensaje("assistant", pregunta_actual["pregunta"])
     respuesta_usuario = st.chat_input("Tu respuesta")
     if respuesta_usuario:
         mostrar_mensaje("user", respuesta_usuario)
-        st.session_state.respuestas[st.session_state.pregunta_actual] = {"respuesta": respuesta_usuario}
-        st.session_state.pregunta_actual = None
+        st.session_state.respuestas.append({
+            "pregunta": pregunta_actual["pregunta"],
+            "respuesta_usuario": respuesta_usuario,
+            "respuesta_esperada": pregunta_actual["respuesta_esperada"]
+        })
+        st.session_state.indice_pregunta += 1
         st.rerun()
 
 # Finalización y análisis tras responder todas las preguntas
-if st.session_state.fase == "finalizado":
-    num_entrevista = random.randint(100000, 999999)
-    fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+if st.session_state.acepto_terminos and st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
     consultas_eval = [
-        f"Pregunta: {p}\nRespuesta usuario: {r['respuesta']}\nRespuesta esperada: {preguntas_generales.get(p, puestos[st.session_state.postulante['codigo_puesto']]['preguntas'].get(p, ''))}" 
-        for p, r in st.session_state.respuestas.items()
+        f"Pregunta: {r['pregunta']}\nRespuesta usuario: {r['respuesta_usuario']}\nRespuesta esperada: {r['respuesta_esperada']}"
+        for r in st.session_state.respuestas
     ]
     resultados_eval = consultar_gemini_lote(consultas_eval)
-    for i, pregunta in enumerate(st.session_state.respuestas.keys()):
-        st.session_state.respuestas[pregunta]["evaluacion"] = resultados_eval[i]
+    for i, r in enumerate(st.session_state.respuestas):
+        r["evaluacion"] = resultados_eval[i]
     feedback_general = consultar_gemini_lote(["Genera un feedback general sobre la entrevista."])[0]
     promedio_calificacion = consultar_gemini_lote(["Calcula un puntaje promedio."])[0]
+    num_entrevista = random.randint(100000, 999999)
+    fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     reporte = {
         "postulante": st.session_state.postulante,
         "puesto": puestos[st.session_state.postulante["codigo_puesto"]],

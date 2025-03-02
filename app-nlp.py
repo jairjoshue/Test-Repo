@@ -63,6 +63,11 @@ if st.session_state.fase == "inicio" and st.session_state.df_preguntas.empty:
     df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
     consultas_parafraseo = [f"Reformula la siguiente pregunta de una manera distinta: {p}" for p in df_preguntas["pregunta"]]
     nuevas_preguntas = consultar_gemini_lote(consultas_parafraseo)
+    
+    # Manejo de desajuste de longitud
+    if len(nuevas_preguntas) != len(df_preguntas):
+        nuevas_preguntas = nuevas_preguntas[:len(df_preguntas)] if len(nuevas_preguntas) > len(df_preguntas) else nuevas_preguntas + ["(Error en generación, usar original)"] * (len(df_preguntas) - len(nuevas_preguntas))
+    
     df_preguntas["nueva_pregunta"] = nuevas_preguntas
     st.session_state.df_preguntas = df_preguntas
 

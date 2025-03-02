@@ -1,111 +1,88 @@
 import streamlit as st
 import json
 import random
-import time
-from google.generativeai import configure, generate_content
-
-# Configurar la API de Gemini
-# Configurar la API de Gemini
-API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
-genai.configure(api_key=API_KEY)
-# Usar un modelo ligero para evitar bloqueos
-model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+import datetime
 
 # Cargar datos desde archivos JSON
-def cargar_json(nombre_archivo):
-    with open(nombre_archivo, "r", encoding="utf-8") as archivo:
-        return json.load(archivo)
+with open("/mnt/data/postulantes.json", "r") as f:
+    postulantes = json.load(f)
+with open("/mnt/data/puestos.json", "r") as f:
+    puestos = json.load(f)
+with open("/mnt/data/preguntas_generales.json", "r") as f:
+    preguntas_generales = json.load(f)
 
-# Guardar datos en archivos JSON
-def guardar_json(nombre_archivo, datos):
-    with open(nombre_archivo, "w", encoding="utf-8") as archivo:
-        json.dump(datos, archivo, indent=4, ensure_ascii=False)
-
-# Cargar datos
-postulantes = cargar_json("postulantes.json")
-preguntas_generales_empresa = cargar_json("preguntas_generales.json")
-puestos = cargar_json("puestos.json")
-
-# Estado de la aplicación
-def inicializar_estado():
-    if "entrevista_iniciada" not in st.session_state:
-        st.session_state["entrevista_iniciada"] = False
-    if "respuestas_usuario" not in st.session_state:
-        st.session_state["respuestas_usuario"] = {}
-    if "preguntas_ordenadas" not in st.session_state:
-        st.session_state["preguntas_ordenadas"] = []
-    if "chat_history" not in st.session_state:
-        st.session_state["chat_history"] = []
-    if "puesto" not in st.session_state:
-        st.session_state["puesto"] = None
+# Inicializar historial de chat
+def init_session():
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
     if "postulante" not in st.session_state:
-        st.session_state["postulante"] = None
+        st.session_state.postulante = None
+    if "preguntas" not in st.session_state:
+        st.session_state.preguntas = []
+    if "respuestas" not in st.session_state:
+        st.session_state.respuestas = {}
 
-inicializar_estado()
+init_session()
 
-# Validar postulante
-def validar_postulante(documento):
-    for postulante in postulantes:
-        if postulante["documento"] == documento:
-            return postulante, puestos.get(postulante["codigo_puesto"])
-    return None, None
+# Función para buscar postulante
+def buscar_postulante(documento):
+    for p in postulantes:
+        if p["documento"] == documento:
+            return p
+    return None
 
-# Iniciar entrevista
-def iniciar_entrevista():
-    puesto = st.session_state["puesto"]
-    if not st.session_state["preguntas_ordenadas"]:
-        preguntas = list(puesto["preguntas"].items())
-        random.shuffle(preguntas)
-        st.session_state["preguntas_ordenadas"] = preguntas
-    st.session_state["chat_history"].append(("👨‍💼", f"Bienvenido a Minera CHINALCO. Postula al puesto de **{puesto['nombre']}**. Comencemos la entrevista."))
+# Función para mostrar mensaje en el chat
+def mostrar_mensaje(rol, mensaje):
+    with st.chat_message(rol):
+        st.markdown(mensaje)
+    st.session_state.messages.append({"role": rol, "content": mensaje})
 
-# Evaluación con IA
-def evaluar_respuestas():
-    respuestas_usuario = st.session_state["respuestas_usuario"]
-    feedback_total = {}
-    puntaje_total = 0
-    total_preguntas = len(respuestas_usuario)
-    for pregunta, datos in respuestas_usuario.items():
-        respuesta = datos["respuesta"]
-        respuesta_esperada = datos["esperada"]
-        prompt = f"Evalúa la respuesta: {respuesta} frente a la esperada: {respuesta_esperada}. Da un puntaje entre 0-100%."
-        response = model.generate_content(prompt)
-        feedback_total[pregunta] = {"respuesta": respuesta, "evaluacion": response.text.strip()}
-    return feedback_total
+# Mostrar mensajes previos
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# Guardar historial de entrevistas
-def guardar_historial():
-    historial = {"postulante": st.session_state["postulante"], "respuestas": evaluar_respuestas()}
-    with open("historial.json", "w", encoding="utf-8") as file:
-        json.dump(historial, file, indent=4, ensure_ascii=False)
+# Pantalla inicial
+if st.session_state.postulante is None:
+    mostrar_mensaje("assistant", "Bienvenido al proceso de entrevista de Minera CHINALCO. Por favor, ingresa tu número de documento para verificar tu registro.")
+    doc_input = st.chat_input("Ingresa tu número de documento")
+    if doc_input:
+        postulante = buscar_postulante(doc_input)
+        if postulante:
+            st.session_state.postulante = postulante
+            puesto = puestos[postulante["codigo_puesto"]]
+            mostrar_mensaje("assistant", f"Bienvenido {postulante['nombre']}. Postulas al puesto **{puesto['nombre']}**. Este proceso evaluará tu idoneidad para el puesto mediante una serie de preguntas. Acepta los términos para continuar.")
+            if st.button("Aceptar términos"):
+                st.session_state.preguntas = list(puesto["preguntas"].keys())
+                st.rerun()
+        else:
+            mostrar_mensaje("assistant", "Tu documento no está registrado. Contacta con RRHH en infoprocesosrrhh@chinalco.com.pe.")
+            st.stop()
 
-# Interfaz Streamlit
-st.image("logo-mina.png", width=200)
-st.markdown("<h1>💬 Chatbot de Entrevista - Minera CHINALCO</h1>", unsafe_allow_html=True)
-
-documento = st.text_input("Ingrese su documento:")
-if st.button("Verificar"):
-    postulante, puesto = validar_postulante(documento)
-    if postulante:
-        st.session_state["postulante"] = postulante
-        st.session_state["puesto"] = puesto
-        st.session_state["entrevista_iniciada"] = True
-        iniciar_entrevista()
+# Proceso de preguntas
+if st.session_state.postulante and st.session_state.preguntas:
+    if "pregunta_actual" not in st.session_state:
+        st.session_state.pregunta_actual = 0
+    
+    if st.session_state.pregunta_actual < len(st.session_state.preguntas):
+        pregunta = st.session_state.preguntas[st.session_state.pregunta_actual]
+        mostrar_mensaje("assistant", f"{pregunta}")
+        respuesta_usuario = st.chat_input("Tu respuesta")
+        if respuesta_usuario:
+            st.session_state.respuestas[pregunta] = respuesta_usuario
+            st.session_state.pregunta_actual += 1
+            st.rerun()
     else:
-        st.error("No se encontró en la base de datos. Contacte a RRHH.")
-
-# Chatbot
-chat_container = st.container()
-with chat_container:
-    for rol, mensaje in st.session_state["chat_history"]:
-        st.markdown(f"**{rol}**: {mensaje}")
-
-respuesta_usuario = st.text_input("Escriba su respuesta aquí:")
-if st.button("📤 Enviar Respuesta"):
-    if st.session_state["entrevista_iniciada"] and respuesta_usuario:
-        pregunta, respuesta_esperada = st.session_state["preguntas_ordenadas"].pop(0)
-        st.session_state["respuestas_usuario"][pregunta] = {"respuesta": respuesta_usuario, "esperada": respuesta_esperada}
-        st.session_state["chat_history"].append(("👤", respuesta_usuario))
-        if not st.session_state["preguntas_ordenadas"]:
-            guardar_historial()
-            st.success("Entrevista finalizada. Sus respuestas han sido enviadas a RRHH.")
+        num_entrevista = random.randint(100000, 999999)
+        fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        reporte = {
+            "postulante": st.session_state.postulante,
+            "puesto": puestos[st.session_state.postulante["codigo_puesto"]],
+            "fecha": fecha,
+            "respuestas": st.session_state.respuestas,
+            "id_entrevista": num_entrevista
+        }
+        with open(f"/mnt/data/entrevista_{num_entrevista}.json", "w") as f:
+            json.dump(reporte, f)
+        mostrar_mensaje("assistant", f"Gracias por completar la entrevista. Tu número de entrevista es {num_entrevista}. RRHH se comunicará contigo.")
+        st.session_state.clear()

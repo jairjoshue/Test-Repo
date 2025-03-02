@@ -117,9 +117,7 @@ if st.session_state.fase == "evaluacion":
         for r in st.session_state.respuestas
     ]
     resultados_eval = consultar_gemini_lote(consultas_eval)
-    for i, r in enumerate(st.session_state.respuestas):
-        r["evaluacion"] = resultados_eval[i]
-    feedback_general = consultar_gemini_lote(["Genera un feedback general sobre la entrevista."])[0]
-    promedio_calificacion = consultar_gemini_lote(["Calcula un puntaje promedio."])[0]
+    feedback_general = consultar_gemini_lote([f"Genera un feedback general sobre la entrevista considerando estas respuestas: {json.dumps(st.session_state.respuestas)}"])[0]
+    promedio_calificacion = consultar_gemini_lote([f"Calcula un puntaje promedio basado en la coherencia y relevancia de las respuestas con respecto a las respuestas esperadas: {json.dumps(st.session_state.respuestas)}"])[0]
     mostrar_mensaje("assistant", f"Gracias por completar la entrevista. **Feedback:** {feedback_general}\n**Calificación final:** {promedio_calificacion}")
     st.session_state.clear()

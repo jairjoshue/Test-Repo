@@ -66,6 +66,17 @@ def generar_repregunta(pregunta, respuesta_usuario):
     else:
         return "No se pudo generar una repregunta en este momento."
 
+def limpiar_texto(texto):
+    """
+    Limpia el texto de caracteres especiales que pueden afectar el formato de Markdown en Streamlit.
+    """
+    texto = texto.replace("#", "")  # Evita que se interprete como encabezado
+    texto = texto.replace("*", "")  # Evita negritas o cursivas no deseadas
+    texto = texto.replace("_", "")  # Evita texto subrayado o cursiva
+    texto = texto.replace("-", "•")  # Evita guiones que puedan interpretarse como listas
+    texto = texto.replace("—", "-")  # Reemplazo de guiones largos por guiones normales
+    return texto.strip()
+
 def generar_informe(postulante, respuestas):
     """
     Genera un informe detallado con el puntaje obtenido, feedback resumido y análisis de sentimientos.
@@ -84,12 +95,12 @@ def generar_informe(postulante, respuestas):
 
         # Separar explicación y análisis de sentimientos
         lineas = resultado.split("\n")
-        explicacion_resumida = lineas[2]  # Tomar solo la primera línea como explicación breve
-        analisis_sentimiento = lineas[4] #next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
+        explicacion_resumida = limpiar_texto(lineas[2])  # Tomar solo la primera línea como explicación breve
+        analisis_sentimiento = limpiar_texto(lineas[4]) #next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
 
         feedbacks.append(f"""
-✅ **{r['pregunta']}**  
-🔹 **Respuesta del Postulante:** *{r['respuesta_usuario']}*  
+✅ **{limpiar_texto(r['pregunta'])}**  
+📝 **Respuesta del Postulante:** {limpiar_texto(r['respuesta_usuario'])}  
 ⭐ **Puntaje:** {puntaje}  
 📌 **Explicación:** {explicacion_resumida}  
 💬 **Análisis de Sentimiento:** {analisis_sentimiento}  
@@ -111,13 +122,13 @@ def generar_informe(postulante, respuestas):
 
     # Generación del informe final con formato mejorado
     informe = f"""
-📌 **Informe de Evaluación**  
-👤 **Nombre:** {postulante['nombre']}  
-📄 **Documento:** {postulante['documento']}  
-📌 **Puesto:** {postulante['codigo_puesto']}  
+🔍 **Informe de Evaluación**  
+👤 **Nombre:** {limpiar_texto(postulante['nombre'])}  
+📄 **Documento:** {limpiar_texto(postulante['documento'])}  
+📌 **Puesto:** {limpiar_texto(postulante['codigo_puesto'])}  
 📅 **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}  
 
-📊 **Resultados**  
+📝 **Resultados**  
 {''.join(feedbacks)}
 
 🎯 **Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)  

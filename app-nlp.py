@@ -123,14 +123,15 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
         st.rerun()
 
 # Evaluación con puntajes específicos
+# Evaluación con puntajes específicos
 if st.session_state.fase == "evaluacion":
     consultas_eval = [
         f"Pregunta: {r['pregunta']}\nRespuesta usuario: {r['respuesta_usuario']}\nRespuesta esperada: {r['respuesta_esperada']}\nEvalúa con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien. Explica en pocas palabras el motivo."
         for r in st.session_state.respuestas
     ]
     resultados_eval = consultar_gemini_lote(consultas_eval)
-    puntajes = [float(r.split()[0]) if r[0].isdigit() else 0 for r in resultados_eval]
+    puntajes = [float(r.split()[0]) if r and r[0].isdigit() else 0 for r in resultados_eval]
     total_puntaje = sum(puntajes)
-    feedback = [f"✅ {r['pregunta']}\nPuntaje: {puntajes[i]} ⭐\nMotivo: {resultados_eval[i][2:]}" for i, r in enumerate(st.session_state.respuestas)]
+    feedback = [f"✅ {r['pregunta']}\nPuntaje: {puntajes[i]} ⭐\nMotivo: {resultados_eval[i][2:] if len(resultados_eval[i]) > 2 else 'Sin evaluación'}" for i, r in enumerate(st.session_state.respuestas)]
     mostrar_mensaje("assistant", "\n\n".join(feedback) + f"\n\n🎯 **Puntaje final: {total_puntaje}/{len(puntajes)}**")
     st.session_state.clear()

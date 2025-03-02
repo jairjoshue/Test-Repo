@@ -50,37 +50,10 @@ def init_session():
         st.session_state.acepto_terminos = False
     if "fase" not in st.session_state:
         st.session_state.fase = "inicio"
+    if "preguntas_generadas" not in st.session_state:
+        st.session_state.preguntas_generadas = False
 
 init_session()
-
-# Generar preguntas parafraseadas con Gemini si aún no se han generado
-if st.session_state.fase == "inicio" and st.session_state.df_preguntas.empty:
-    todas_preguntas = {**preguntas_generales}
-    if st.session_state.postulante:
-        puesto_codigo = st.session_state.postulante["codigo_puesto"]
-        if puesto_codigo in puestos:
-            todas_preguntas.update(puestos[puesto_codigo]["preguntas"])
-    df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
-    consultas_parafraseo = [f"Reformula la siguiente pregunta de una manera distinta: {p}" for p in df_preguntas["pregunta"]]
-    nuevas_preguntas = consultar_gemini_lote(consultas_parafraseo)
-    
-    # Manejo de desajuste de longitud
-    if len(nuevas_preguntas) != len(df_preguntas):
-        nuevas_preguntas = nuevas_preguntas[:len(df_preguntas)] if len(nuevas_preguntas) > len(df_preguntas) else nuevas_preguntas + ["(Error en generación, usar original)"] * (len(df_preguntas) - len(nuevas_preguntas))
-    
-    df_preguntas["nueva_pregunta"] = nuevas_preguntas
-    st.session_state.df_preguntas = df_preguntas
-
-# Función para mostrar mensajes en el chat
-def mostrar_mensaje(rol, mensaje):
-    with st.chat_message(rol):
-        st.markdown(mensaje)
-    st.session_state.messages.append({"role": rol, "content": mensaje})
-
-# Mostrar mensajes previos
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
 
 # Validación del postulante
 if st.session_state.fase == "inicio":
@@ -91,7 +64,8 @@ if st.session_state.fase == "inicio":
         postulante = next((p for p in postulantes if p["documento"] == doc_input), None)
         if postulante:
             st.session_state.postulante = postulante
-            mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puestos[postulante['codigo_puesto']]['nombre']}**. Acepta los términos para continuar.")
+            puesto_codigo = postulante["codigo_puesto"]
+            mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puestos[puesto_codigo]['nombre']}**. Acepta los términos para continuar.")
             st.session_state.fase = "esperando_terminos"
         else:
             mostrar_mensaje("assistant", "Tu documento no está registrado. Contacta con RRHH en infoprocesosrrhh@chinalco.com.pe.")
@@ -102,14 +76,33 @@ if st.session_state.fase == "esperando_terminos":
     if st.button("Acepto los términos"):
         mostrar_mensaje("user", "Acepto los términos")
         st.session_state.acepto_terminos = True
-        st.session_state.fase = "preguntas"
+        st.session_state.fase = "generar_preguntas"
         st.rerun()
+
+# Generación de preguntas reformuladas
+if st.session_state.fase == "generar_preguntas" and not st.session_state.preguntas_generadas:
+    todas_preguntas = {**preguntas_generales}
+    puesto_codigo = st.session_state.postulante["codigo_puesto"]
+    if puesto_codigo in puestos:
+        todas_preguntas.update(puestos[puesto_codigo]["preguntas"])
+    df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
+    consultas_parafraseo = [f"Reformula la siguiente pregunta de una manera distinta: {p}" for p in df_preguntas["pregunta"]]
+    nuevas_preguntas = consultar_gemini_lote(consultas_parafraseo)
+    
+    if len(nuevas_preguntas) != len(df_preguntas):
+        nuevas_preguntas = nuevas_preguntas[:len(df_preguntas)] if len(nuevas_preguntas) > len(df_preguntas) else nuevas_preguntas + ["(Error en generación, usar original)"] * (len(df_preguntas) - len(nuevas_preguntas))
+    
+    df_preguntas["nueva_pregunta"] = nuevas_preguntas
+    st.session_state.df_preguntas = df_preguntas
+    st.session_state.preguntas_generadas = True
+    st.session_state.fase = "preguntas"
+    st.rerun()
 
 # Navegación por preguntas
 if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
     pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["nueva_pregunta"]
     if "pregunta_mostrada" not in st.session_state or st.session_state.pregunta_mostrada != pregunta_actual:
-        mostrar_mensaje("assistant", pregunta_actual)
+        mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
         st.session_state.pregunta_mostrada = pregunta_actual
     respuesta_usuario = st.chat_input("Tu respuesta")
     if respuesta_usuario:

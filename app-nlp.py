@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import random
 import datetime
+import pandas as pd
 import google.generativeai as genai
 
 # Configurar API de Gemini
@@ -33,8 +34,15 @@ with open("puestos.json", "r") as f:
 with open("preguntas_generales.json", "r") as f:
     preguntas_generales = json.load(f)
 
+# Obtener las preguntas del puesto del postulante
+puesto_codigo = None
+preguntas_especificas = {}
+if "postulante" in st.session_state and st.session_state.postulante:
+    puesto_codigo = st.session_state.postulante["codigo_puesto"]
+    if puesto_codigo in puestos and "preguntas" in puestos[puesto_codigo]:
+        preguntas_especificas = puestos[puesto_codigo]["preguntas"]
+
 # Fusionar preguntas generales y específicas en un dataframe
-preguntas_especificas = puestos[next(iter(puestos))]["preguntas"]
 todas_preguntas = {**preguntas_generales, **preguntas_especificas}
 df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", "respuesta_esperada"])
 
@@ -42,8 +50,6 @@ df_preguntas = pd.DataFrame(list(todas_preguntas.items()), columns=["pregunta", 
 def init_session():
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    if "postulante" not in st.session_state:
-        st.session_state.postulante = None
     if "df_preguntas" not in st.session_state:
         st.session_state.df_preguntas = df_preguntas
     if "indice_pregunta" not in st.session_state:
@@ -69,7 +75,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # Validación del postulante
-if st.session_state.postulante is None:
+if "postulante" not in st.session_state or st.session_state.postulante is None:
     mostrar_mensaje("assistant", "Bienvenido a la entrevista de Minera CHINALCO. Ingresa tu número de documento para validar tu registro.")
     doc_input = st.chat_input("Ingresa tu número de documento")
     if doc_input:
@@ -77,8 +83,13 @@ if st.session_state.postulante is None:
         postulante = next((p for p in postulantes if p["documento"] == doc_input), None)
         if postulante:
             st.session_state.postulante = postulante
-            puesto = puestos[postulante["codigo_puesto"]]
-            mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puesto['nombre']}**. Acepta los términos para continuar.")
+            puesto_codigo = postulante["codigo_puesto"]
+            if puesto_codigo in puestos:
+                st.session_state.df_preguntas = pd.DataFrame(
+                    list({**preguntas_generales, **puestos[puesto_codigo]["preguntas"]}.items()), 
+                    columns=["pregunta", "respuesta_esperada"]
+                )
+            mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puestos[puesto_codigo]['nombre']}**. Acepta los términos para continuar.")
         else:
             mostrar_mensaje("assistant", "Tu documento no está registrado. Contacta con RRHH en infoprocesosrrhh@chinalco.com.pe.")
             st.stop()
@@ -115,18 +126,5 @@ if st.session_state.acepto_terminos and st.session_state.indice_pregunta >= len(
         r["evaluacion"] = resultados_eval[i]
     feedback_general = consultar_gemini_lote(["Genera un feedback general sobre la entrevista."])[0]
     promedio_calificacion = consultar_gemini_lote(["Calcula un puntaje promedio."])[0]
-    num_entrevista = random.randint(100000, 999999)
-    fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    reporte = {
-        "postulante": st.session_state.postulante,
-        "puesto": puestos[st.session_state.postulante["codigo_puesto"]],
-        "fecha": fecha,
-        "respuestas": st.session_state.respuestas,
-        "feedback": feedback_general,
-        "calificacion": promedio_calificacion,
-        "id_entrevista": num_entrevista
-    }
-    with open(f"entrevista_{num_entrevista}.json", "w") as f:
-        json.dump(reporte, f)
     mostrar_mensaje("assistant", f"Gracias por completar la entrevista. **Feedback:** {feedback_general}\n**Calificación final:** {promedio_calificacion}")
     st.session_state.clear()

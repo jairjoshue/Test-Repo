@@ -30,6 +30,8 @@ def consultar_gemini_lote(consultas):
 def mostrar_mensaje(rol, mensaje):
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if st.session_state.messages and st.session_state.messages[-1]["content"] == mensaje:
+        return  # Evitar duplicados consecutivos
     with st.chat_message(rol):
         st.markdown(mensaje)
     st.session_state.messages.append({"role": rol, "content": mensaje})
@@ -101,10 +103,12 @@ if st.session_state.fase == "preguntas" and st.session_state.df_preguntas.empty:
     st.session_state.indice_pregunta = 0
     st.rerun()
 
-# Navegación por preguntas
+# Navegación por preguntas sin repeticiones
 if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
     pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["pregunta"]
-    mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
+    if "pregunta_mostrada" not in st.session_state or st.session_state.pregunta_mostrada != pregunta_actual:
+        mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
+        st.session_state.pregunta_mostrada = pregunta_actual
     respuesta_usuario = st.chat_input("Tu respuesta")
     if respuesta_usuario:
         mostrar_mensaje("user", respuesta_usuario)
@@ -118,14 +122,15 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
             st.session_state.fase = "evaluacion"
         st.rerun()
 
-
-# Finalización y análisis tras responder todas las preguntas
+# Evaluación con puntajes específicos
 if st.session_state.fase == "evaluacion":
     consultas_eval = [
-        f"Pregunta: {r['pregunta']}\nRespuesta usuario: {r['respuesta_usuario']}\nRespuesta esperada: {r['respuesta_esperada']}"
+        f"Pregunta: {r['pregunta']}\nRespuesta usuario: {r['respuesta_usuario']}\nRespuesta esperada: {r['respuesta_esperada']}\nEvalúa con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien. Explica en pocas palabras el motivo."
         for r in st.session_state.respuestas
     ]
     resultados_eval = consultar_gemini_lote(consultas_eval)
-    feedback_detallado = [f"{r['pregunta']}\nPuntaje: {resultados_eval[i]}\nMotivo: {consultar_gemini_lote([f'Explica la calificación dada a esta respuesta: {r}'])[0]}" for i, r in enumerate(st.session_state.respuestas)]
-    mostrar_mensaje("assistant", "\n\n".join(feedback_detallado))
+    puntajes = [float(r.split()[0]) if r[0].isdigit() else 0 for r in resultados_eval]
+    total_puntaje = sum(puntajes)
+    feedback = [f"✅ {r['pregunta']}\nPuntaje: {puntajes[i]} ⭐\nMotivo: {resultados_eval[i][2:]}" for i, r in enumerate(st.session_state.respuestas)]
+    mostrar_mensaje("assistant", "\n\n".join(feedback) + f"\n\n🎯 **Puntaje final: {total_puntaje}/{len(puntajes)}**")
     st.session_state.clear()

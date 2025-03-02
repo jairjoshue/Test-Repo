@@ -245,29 +245,31 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
         mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
         st.session_state.pregunta_mostrada = pregunta_actual
         st.session_state.respuesta_parcial = None  # Inicializamos la respuesta parcial
+        st.session_state.intento_respuesta = ""  # Para almacenar intentos de respuesta inválidos
 
     # Si aún no se ha respondido la primera vez
     if st.session_state.respuesta_parcial is None:
-        respuesta_usuario = st.chat_input("Tu respuesta (mín. 10, máx. 50 palabras)")
+        respuesta_usuario = st.chat_input("Tu respuesta (mín. 10, máx. 50 palabras)", value=st.session_state.intento_respuesta)
         if respuesta_usuario:
-            # Validar respuesta
             error = validar_respuesta(respuesta_usuario)
             if error:
-                mostrar_mensaje("assistant", f"⚠️ {error}")
+                mostrar_mensaje("assistant", error)
+                st.session_state.intento_respuesta = respuesta_usuario  # Mantener el intento de respuesta para corregirlo
             else:
                 mostrar_mensaje("user", respuesta_usuario)
-                st.session_state.respuesta_parcial = respuesta_usuario  # Guardamos la primera respuesta
+                st.session_state.respuesta_parcial = respuesta_usuario  # Guardamos la primera respuesta válida
                 repregunta = generar_repregunta(pregunta_actual, respuesta_usuario)
                 mostrar_mensaje("assistant", f"🤔 {repregunta}")  # Mostramos la repregunta
+                st.session_state.intento_respuesta = ""  # Limpiar intento de respuesta inválido
                 st.rerun()
     else:
         # Obtener respuesta a la repregunta
-        respuesta_repregunta = st.chat_input("Respuesta a la repregunta (mín. 10, máx. 50 palabras)")
+        respuesta_repregunta = st.chat_input("Respuesta a la repregunta (mín. 10, máx. 50 palabras)", value=st.session_state.intento_respuesta)
         if respuesta_repregunta:
-            # Validar respuesta de la repregunta
             error = validar_respuesta(respuesta_repregunta)
             if error:
-                mostrar_mensaje("assistant", f"⚠️ {error}")
+                mostrar_mensaje("assistant", error)
+                st.session_state.intento_respuesta = respuesta_repregunta  # Mantener el intento para corregirlo
             else:
                 mostrar_mensaje("user", respuesta_repregunta)
                 
@@ -282,6 +284,7 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
                 # Pasar a la siguiente pregunta
                 st.session_state.indice_pregunta += 1
                 st.session_state.respuesta_parcial = None  # Reiniciar la variable para la siguiente pregunta
+                st.session_state.intento_respuesta = ""  # Limpiar intento de respuesta inválido
                 
                 if st.session_state.indice_pregunta >= len(st.session_state.df_preguntas):
                     st.session_state.fase = "evaluacion"

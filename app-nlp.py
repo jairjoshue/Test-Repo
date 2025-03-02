@@ -67,7 +67,7 @@ with st.form(key="chat_form", clear_on_submit=True):
     submit_button = st.form_submit_button("Enviar Respuesta")
 
 # Procesar la entrada del usuario
-if submit_button and user_input:
+if submit_button or user_input:
     add_message("user", user_input)
     
     # Solicitar documento después del nombre

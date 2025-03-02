@@ -42,7 +42,7 @@ def init_session():
     if "preguntas" not in st.session_state:
         st.session_state.preguntas = []
     if "preguntas_generales" not in st.session_state:
-        st.session_state.preguntas_generales = preguntas_generales[:]
+        st.session_state.preguntas_generales = list(preguntas_generales.keys())  # ✅ Corrección aquí
     if "respuestas" not in st.session_state:
         st.session_state.respuestas = {}
     if "acepto_terminos" not in st.session_state:
@@ -112,7 +112,7 @@ if st.session_state.acepto_terminos and not st.session_state.preguntas:
     num_entrevista = random.randint(100000, 999999)
     fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     consultas_eval = [
-        f"Pregunta: {p}\nRespuesta usuario: {r['respuesta']}\nRespuesta esperada: {puestos[st.session_state.postulante['codigo_puesto']]['preguntas'].get(p, '')}" 
+        f"Pregunta: {p}\nRespuesta usuario: {r['respuesta']}\nRespuesta esperada: {preguntas_generales.get(p, '')}" 
         for p, r in st.session_state.respuestas.items()
     ]
     resultados_eval = consultar_gemini_lote(consultas_eval)

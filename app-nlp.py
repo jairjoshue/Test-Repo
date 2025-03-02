@@ -77,11 +77,13 @@ for message in st.session_state.messages:
 
 
 # Mostrar mensaje de bienvenida con lista de documentos de prueba solo una vez
+if "mostro_documentos_prueba" not in st.session_state:
+    st.session_state.mostro_documentos_prueba = False
+
 if not st.session_state.mostro_documentos_prueba:
     documentos_prueba = "\n".join([f"- {p['documento']} ({p['nombre']})" for p in postulantes])
     mostrar_mensaje("assistant", "Bienvenido al proceso de entrevista. Esta es una prueba de validación. Puedes utilizar los siguientes documentos para probar el sistema:\n\n *" + documentos_prueba + "*")
     st.session_state.mostro_documentos_prueba = True
-    st.rerun()
 
 # Validación del postulante
 if st.session_state.fase == "inicio":

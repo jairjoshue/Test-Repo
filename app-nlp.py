@@ -26,6 +26,14 @@ def consultar_gemini_lote(consultas):
     else:
         return ["Gemini no disponible"] * len(consultas)
 
+# Función para mostrar mensajes en el chat
+def mostrar_mensaje(rol, mensaje):
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    with st.chat_message(rol):
+        st.markdown(mensaje)
+    st.session_state.messages.append({"role": rol, "content": mensaje})
+    
 # Cargar datos desde archivos JSON
 with open("postulantes.json", "r") as f:
     postulantes = json.load(f)
@@ -55,6 +63,11 @@ def init_session():
 
 init_session()
 
+# Mostrar mensajes previos
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
 # Validación del postulante
 if st.session_state.fase == "inicio":
     mostrar_mensaje("assistant", "Bienvenido a la entrevista de Minera CHINALCO. Esta entrevista es confidencial y sus datos serán tratados con estricta privacidad. Ingresa tu número de documento para validar tu registro.")
@@ -67,6 +80,7 @@ if st.session_state.fase == "inicio":
             puesto_codigo = postulante["codigo_puesto"]
             mostrar_mensaje("assistant", f"Bienvenido **{postulante['nombre']}**. Postulas al puesto **{puestos[puesto_codigo]['nombre']}**. Acepta los términos para continuar.")
             st.session_state.fase = "esperando_terminos"
+            st.rerun()
         else:
             mostrar_mensaje("assistant", "Tu documento no está registrado. Contacta con RRHH en infoprocesosrrhh@chinalco.com.pe.")
             st.stop()
@@ -101,9 +115,7 @@ if st.session_state.fase == "generar_preguntas" and not st.session_state.pregunt
 # Navegación por preguntas
 if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < len(st.session_state.df_preguntas):
     pregunta_actual = st.session_state.df_preguntas.iloc[st.session_state.indice_pregunta]["nueva_pregunta"]
-    if "pregunta_mostrada" not in st.session_state or st.session_state.pregunta_mostrada != pregunta_actual:
-        mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
-        st.session_state.pregunta_mostrada = pregunta_actual
+    mostrar_mensaje("assistant", f"Pregunta {st.session_state.indice_pregunta + 1}: {pregunta_actual}")
     respuesta_usuario = st.chat_input("Tu respuesta")
     if respuesta_usuario:
         mostrar_mensaje("user", respuesta_usuario)

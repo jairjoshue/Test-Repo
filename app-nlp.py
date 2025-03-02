@@ -212,14 +212,21 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
 #    st.session_state.clear()
 #    st.session_state.clear()
 if st.session_state.fase == "evaluacion":
-    informe = generar_informe(st.session_state.postulante, st.session_state.respuestas)
+    informe, puntajes = generar_informe(st.session_state.postulante, st.session_state.respuestas)
     mostrar_mensaje("assistant", informe)
     
-    # Conclusión basada en puntaje final
-    if sum(puntajes) / len(puntajes) >= 0.7:
+    # Verificar que puntajes no esté vacío antes de calcular promedio
+    if len(puntajes) > 0:
+        promedio_puntaje = sum(puntajes) / len(puntajes)
+    else:
+        promedio_puntaje = 0
+
+    # Mostrar conclusión basada en puntaje final
+    if promedio_puntaje >= 0.7:
         mostrar_mensaje("assistant", "✅ **El postulante ha demostrado un buen nivel de conocimientos.**")
     else:
         mostrar_mensaje("assistant", "⚠️ **El postulante necesita reforzar sus conocimientos antes de continuar con el proceso.**")
 
     # No limpiar la sesión inmediatamente
     st.stop()
+

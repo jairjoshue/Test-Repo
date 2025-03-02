@@ -21,8 +21,8 @@ def consultar_gemini(pregunta, respuesta_usuario, respuesta_esperada):
             f"Pregunta: {pregunta}\n"
             f"Respuesta usuario: {respuesta_usuario}\n"
             f"Respuesta esperada: {respuesta_esperada}\n"
-            f"Evalúa la respuesta con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien."
-            f"Explica brevemente en menos de 20 palabras el porqué del puntaje y analiza el sentimiento de la respuesta en menos de 20 palabras."
+            f"En la primera linea evalúa la respuesta con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien."
+            f"En una segunda linea explica brevemente y con solo una sola linea usandos menos de 20 palabras el porqué del puntaje y en otra linea analiza el sentimiento de la respuesta en menos de 20 palabras."
         )
         try:
             response = model.generate_content(consulta)
@@ -50,8 +50,8 @@ def generar_informe(postulante, respuestas):
 
         # Separar explicación y análisis de sentimientos
         lineas = resultado.split("\n")
-        explicacion_resumida = lineas[0]  # Tomar solo la primera línea como explicación breve
-        analisis_sentimiento = next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
+        explicacion_resumida = lineas[1]  # Tomar solo la primera línea como explicación breve
+        analisis_sentimiento = lineas[2] #next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
 
         feedbacks.append(f"✅ **{r['pregunta']}**\n"
                          f"- **Puntaje:** {puntaje} ⭐\n"
@@ -71,7 +71,7 @@ def generar_informe(postulante, respuestas):
     **Puesto:** {postulante['codigo_puesto']}
     **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}
 
-    ### **Resultados**
+    **Resultados**
     {'\n\n'.join(feedbacks)}
 
     **🎯 Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)

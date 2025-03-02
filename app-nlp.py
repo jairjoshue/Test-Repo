@@ -68,11 +68,12 @@ def generar_repregunta(pregunta, respuesta_usuario):
 
 def generar_informe(postulante, respuestas):
     """
-    Genera un informe estructurado con el puntaje obtenido, feedback resumido y análisis de sentimientos.
+    Genera un informe detallado con el puntaje obtenido, feedback resumido y análisis de sentimientos.
     Retorna:
-    - informe (str): El informe estructurado con la evaluación.
-    - puntajes (list): Lista de puntajes individuales obtenidos por el postulante.
+    - informe (str): Informe estructurado con la evaluación.
+    - puntajes (list): Lista de puntajes individuales.
     """
+
     puntajes = []
     feedbacks = []
 
@@ -86,38 +87,44 @@ def generar_informe(postulante, respuestas):
         explicacion_resumida = lineas[2]  # Tomar solo la primera línea como explicación breve
         analisis_sentimiento = lineas[4] #next((linea for linea in lineas if "Sentimiento" in linea), "Sin análisis de sentimiento.")
 
-        feedbacks.append(f"✅ **{r['pregunta']}**\n"
-                         f"- **Puntaje:** {puntaje} ⭐\n"
-                         f"- **Explicación:** {explicacion_resumida}\n"
-                         f"- **Análisis de Sentimiento:** {analisis_sentimiento}")
+        feedbacks.append(f"""
+        ✅ **{r['pregunta']}**  
+        - 📝 **Respuesta del Postulante:** {r['respuesta_usuario']}  
+        - ⭐ **Puntaje:** {puntaje}  
+        - 📌 **Explicación:** {explicacion_resumida}  
+        - 💬 **Análisis de Sentimiento:** {analisis_sentimiento}  
+        """)
 
     # Cálculo de puntaje final
     puntaje_total = sum(puntajes)
     puntaje_maximo = len(respuestas) if respuestas else 1  # Evitar división entre 0
-    promedio = round((puntaje_total / puntaje_maximo) * 100, 2)  # Convertir a porcentaje
+    promedio = round((puntaje_total / puntaje_maximo) * 100, 2)
 
-    # Generación del informe final
+    # Evaluación final del candidato
+    if promedio >= 80:
+        conclusion = "✅ **El postulante ha aprobado satisfactoriamente la evaluación.**"
+    elif 50 <= promedio < 80:
+        conclusion = "⚠️ **El postulante tiene conocimientos básicos, pero necesita mejorar.**"
+    else:
+        conclusion = "❌ **El postulante no cumple con los conocimientos requeridos.**"
+
+    # Generación del informe final con formato mejorado
     informe = f"""
-    **📌 Informe de Evaluación**
-    
-    **Nombre:** {postulante['nombre']}
-    
-    **Documento:** {postulante['documento']}
-    
-    **Puesto:** {postulante['codigo_puesto']}
-    
-    **Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}
-    
-    **Resultados**
-    
+    ### 📌 Informe de Evaluación  
+    **👤 Nombre:** {postulante['nombre']}  
+    **📄 Documento:** {postulante['documento']}  
+    **📌 Puesto:** {postulante['codigo_puesto']}  
+    **📅 Fecha:** {datetime.datetime.now().strftime('%d/%m/%Y')}  
+
+    ### 📊 **Resultados**  
     {'\n\n'.join(feedbacks)}
 
-    **🎯 Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)
+    ---
+    **🎯 Puntaje Final:** {puntaje_total}/{puntaje_maximo} ({promedio}%)  
+    {conclusion}
     """
-    
-    return informe, puntajes  # Retornar informe y lista de puntajes
 
-
+    return informe, puntajes
 
 def extraer_puntaje(resultado):
     """
@@ -307,12 +314,13 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
 #    mostrar_mensaje("assistant", "\n\n".join(feedback) + f"\n\n🎯 **Puntaje final: {total_puntaje}/{len(puntajes)}**")
 #    st.session_state.clear()
 #    st.session_state.clear()
+# En la fase de evaluación, mostrar el informe generado
 if st.session_state.fase == "evaluacion":
     informe, puntajes = generar_informe(st.session_state.postulante, st.session_state.respuestas)
     mostrar_mensaje("assistant", informe)
-    
-    # Verificar que puntajes no esté vacío antes de calcular promedio
-    if len(puntajes) > 0:
+
+    # Verificar que haya puntajes antes de calcular el promedio
+    if puntajes:
         promedio_puntaje = sum(puntajes) / len(puntajes)
     else:
         promedio_puntaje = 0
@@ -323,6 +331,4 @@ if st.session_state.fase == "evaluacion":
     else:
         mostrar_mensaje("assistant", "⚠️ **El postulante necesita reforzar sus conocimientos antes de continuar con el proceso.**")
 
-    # No limpiar la sesión inmediatamente
     st.stop()
-

@@ -6,9 +6,8 @@ from google.generativeai import configure, generate_content
 
 # Configurar la API de Gemini
 # Configurar la API de Gemini
-GEMINI_API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
-configure(api_key=API_KEY)
-
+API_KEY = "AIzaSyDoEksHdh7cJ-yY4cblNU15D84zfDkVxbM"
+genai.configure(api_key=API_KEY)
 # Usar un modelo ligero para evitar bloqueos
 model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 

@@ -122,16 +122,29 @@ if st.session_state.fase == "preguntas" and st.session_state.indice_pregunta < l
             st.session_state.fase = "evaluacion"
         st.rerun()
 
-# Evaluación con puntajes específicos
+
 # Evaluación con puntajes específicos
 if st.session_state.fase == "evaluacion":
     consultas_eval = [
-        f"Pregunta: {r['pregunta']}\nRespuesta usuario: {r['respuesta_usuario']}\nRespuesta esperada: {r['respuesta_esperada']}\nEvalúa con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien. Explica en pocas palabras el motivo."
+        f"Pregunta: {r['pregunta']}\nRespuesta usuario: {r['respuesta_usuario']}\nRespuesta esperada: {r['respuesta_esperada']}\nEvalúa la respuesta con 0 si no cumple, 0.5 si cumple parcialmente, 1 si cumple bien. Explica brevemente por qué." 
         for r in st.session_state.respuestas
     ]
-    resultados_eval = consultar_gemini_lote(consultas_eval)
-    puntajes = [float(r.split()[0]) if r and r[0].isdigit() else 0 for r in resultados_eval]
+    resultados_eval = [consultar_gemini_lote([consulta])[0] for consulta in consultas_eval]  # Evaluar pregunta por pregunta
+    
+    puntajes = []
+    feedback = []
+    for i, r in enumerate(st.session_state.respuestas):
+        resultado = resultados_eval[i].strip()
+        puntaje = 0  # Valor por defecto
+        if resultado and resultado[0].isdigit():
+            try:
+                puntaje = float(resultado.split()[0])
+            except ValueError:
+                puntaje = 0
+        puntajes.append(puntaje)
+        motivo = resultado[2:].strip() if len(resultado) > 2 else "Sin evaluación"
+        feedback.append(f"✅ {r['pregunta']}\n**Puntaje:** {puntaje} ⭐\n**Motivo:** {motivo}")
+    
     total_puntaje = sum(puntajes)
-    feedback = [f"✅ {r['pregunta']}\nPuntaje: {puntajes[i]} ⭐\nMotivo: {resultados_eval[i][2:] if len(resultados_eval[i]) > 2 else 'Sin evaluación'}" for i, r in enumerate(st.session_state.respuestas)]
     mostrar_mensaje("assistant", "\n\n".join(feedback) + f"\n\n🎯 **Puntaje final: {total_puntaje}/{len(puntajes)}**")
     st.session_state.clear()
